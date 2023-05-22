@@ -233,8 +233,9 @@ class MainActivity : ComponentActivity() {
                                         Text(text = "清除")
                                     }
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(text = if (isVan) "VSP" else "GSP")
-                                        Checkbox(checked = isVan,
+                                        Text(text = if (isVan) "Van" else "Google")
+                                        Checkbox(
+                                            checked = isVan,
                                             onCheckedChange = { isVan = !isVan })
                                     }
                                     Button(onClick = {
@@ -287,7 +288,6 @@ class MainActivity : ComponentActivity() {
                             Text(text = "Hex")
                             Checkbox(checked = isHex, onCheckedChange = { isHex = !isHex })
                             Button(onClick = {
-                                tx += 1
                             }) { Text(text = "发送") }
                         }
                     }

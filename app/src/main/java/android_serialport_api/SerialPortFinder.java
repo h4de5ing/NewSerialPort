@@ -23,29 +23,28 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.LineNumberReader;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Vector;
 
 public class SerialPortFinder {
 
-    public class Driver {
+    public static class Driver {
         public Driver(String name, String root) {
             mDriverName = name;
             mDeviceRoot = root;
         }
 
-        private String mDriverName;
-        private String mDeviceRoot;
+        private final String mDriverName;
+        private final String mDeviceRoot;
         Vector<File> mDevices = null;
 
         public Vector<File> getDevices() {
             if (mDevices == null) {
-                mDevices = new Vector<File>();
+                mDevices = new Vector<>();
                 File dev = new File("/dev");
                 File[] files = dev.listFiles();
-                int i;
-                for (i = 0; i < files.length; i++) {
+                for (int i = 0; i < Objects.requireNonNull(files).length; i++) {
                     if (files[i].getAbsolutePath().startsWith(mDeviceRoot)) {
                         Log.d(TAG, "Found new device: " + files[i]);
                         mDevices.add(files[i]);
@@ -66,15 +65,15 @@ public class SerialPortFinder {
 
     Vector<Driver> getDrivers() throws IOException {
         if (mDrivers == null) {
-            mDrivers = new Vector<Driver>();
+            mDrivers = new Vector<>();
             LineNumberReader r = new LineNumberReader(new FileReader("/proc/tty/drivers"));
             String l;
             while ((l = r.readLine()) != null) {
-                String drivername = l.substring(0, 0x15).trim();
+                String driverName = l.substring(0, 0x15).trim();
                 String[] w = l.split(" +");
                 if ((w.length >= 5) && (w[w.length - 1].equals("serial"))) {
-                    Log.d(TAG, "Found new driver " + drivername + " on " + w[w.length - 4]);
-                    mDrivers.add(new Driver(drivername, w[w.length - 4]));
+                    Log.d(TAG, "Found new driver " + driverName + " on " + w[w.length - 4]);
+                    mDrivers.add(new Driver(driverName, w[w.length - 4]));
                 }
             }
             r.close();
@@ -84,11 +83,8 @@ public class SerialPortFinder {
 
     public String[] getAllDevices() {
         Vector<String> devices = new Vector<>();
-        Iterator<Driver> itdriv;
         try {
-            itdriv = getDrivers().iterator();
-            while (itdriv.hasNext()) {
-                Driver driver = itdriv.next();
+            for (Driver driver : getDrivers()) {
                 for (File file : driver.getDevices()) {
                     String device = file.getName();
                     String value = String.format("%s (%s)", device, driver.getName());
@@ -103,11 +99,8 @@ public class SerialPortFinder {
 
     public String[] getAllDevicesPath() {
         Vector<String> devices = new Vector<>();
-        Iterator<Driver> itdriv;
         try {
-            itdriv = getDrivers().iterator();
-            while (itdriv.hasNext()) {
-                Driver driver = itdriv.next();
+            for (Driver driver : getDrivers()) {
                 for (File file : driver.getDevices()) {
                     String device = file.getAbsolutePath();
                     System.out.println(device);
@@ -119,13 +112,13 @@ public class SerialPortFinder {
         }
         return devices.toArray(new String[0]);
     }
+
     public List<String> getAllDevs() {
         List<String> devices = new ArrayList<>();
         try {
             for (Driver driver : getDrivers()) {
                 for (File file : driver.getDevices()) {
                     String device = file.getAbsolutePath();
-//                    System.out.println(device);
                     devices.add(device);
                 }
             }
