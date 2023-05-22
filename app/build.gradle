@@ -18,12 +18,29 @@ android {
         vectorDrawables {
             useSupportLibrary true
         }
+        //noinspection ChromeOsAbiSupport
+        ndk { abiFilters 'armeabi-v7a', 'armeabi' }
     }
-
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['libs']
+        }
+    }
+    signingConfigs {
+        sign {
+            //T50 T195 Q66 Q865M_Q115M_android11 Q86  Q86M Q81 SwingA
+            storeFile file("D:\\Android12SignerGUI\\SignFiles\\NewPublic\\platform.jks")
+            storePassword('android')
+            keyAlias('android')
+            keyPassword('android')
+        }
+    }
     buildTypes {
+        debug { signingConfig signingConfigs.sign }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.sign
         }
     }
     compileOptions {
@@ -31,9 +48,7 @@ android {
         targetCompatibility JavaVersion.VERSION_19
     }
     kotlinOptions { jvmTarget = '19' }
-    buildFeatures {
-        compose true
-    }
+    buildFeatures { compose true }
     composeOptions {
         kotlinCompilerExtensionVersion '1.4.3'
     }

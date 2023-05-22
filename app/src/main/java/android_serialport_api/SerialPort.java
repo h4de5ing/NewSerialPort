@@ -28,8 +28,6 @@ import java.io.OutputStream;
 
 public class SerialPort {
 
-    private static final String TAG = "SerialPort";
-
     /*
      * Do not remove or rename the field mFd: it is used by native method close();
      */
@@ -37,17 +35,27 @@ public class SerialPort {
     private FileInputStream mFileInputStream;
     private FileOutputStream mFileOutputStream;
 
-    public SerialPort(File device, int baudrate, int parity, int dataBits, int stopBit, int flags) throws SecurityException, IOException {
-        mFd = open(device.getAbsolutePath(), baudrate, parity, dataBits, stopBit, flags);
+    public SerialPort(File device, int baudRate, int parity, int dataBits, int stopBit, int flags) throws SecurityException, IOException {
+        mFd = open(device.getAbsolutePath(), baudRate, parity, dataBits, stopBit, flags);
         if (mFd == null) {
-            Log.e(TAG, "native open returns null");
+            Log.e("SerialPort", "native open returns null");
             throw new IOException();
         }
         mFileInputStream = new FileInputStream(mFd);
         mFileOutputStream = new FileOutputStream(mFd);
     }
 
-    // Getters and setters
+    public boolean isOpen() {
+        return mFd != null;
+    }
+
+    public void close2() {
+        close();
+        mFd = null;
+        mFileInputStream = null;
+        mFileOutputStream = null;
+    }
+
     public InputStream getInputStream() {
         return mFileInputStream;
     }
@@ -55,8 +63,6 @@ public class SerialPort {
     public OutputStream getOutputStream() {
         return mFileOutputStream;
     }
-
-    // JNI
 
     /**
      * 打开串口
@@ -67,12 +73,10 @@ public class SerialPort {
      * @param dataBits 数据位，5 ~ 8  （默认8）
      * @param stopBit  停止位，1 或 2  （默认 1）
      * @param flags    标记 0（默认）
-     * @throws SecurityException
-     * @throws IOException
      */
     private native static FileDescriptor open(String path, int baudRate, int parity, int dataBits, int stopBit, int flags);
 
-    public native void close();
+    private native void close();
 
     static {
         System.loadLibrary("serial_port");

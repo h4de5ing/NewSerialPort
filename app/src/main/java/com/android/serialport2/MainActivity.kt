@@ -1,6 +1,8 @@
 package com.android.serialport2
 
 import android.os.Bundle
+import android.os.SystemClock
+import android_serialport_api.SerialPort
 import android_serialport_api.SerialPortFinder
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -26,6 +28,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,6 +42,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.android.serialport2.ui.MySpinner
 import com.android.serialport2.ui.theme.NewSerialPortTheme
+import com.van.uart.LastError
+import com.van.uart.UartManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
@@ -48,19 +53,90 @@ import java.io.File
 class MainActivity : ComponentActivity() {
     private val scope = MainScope()
     private val devList = mutableListOf<String>()
+    private var serialPort: SerialPort? = null
+    private var uartManager: UartManager? = null
+    private var readBytes: ByteArray? = null
+
+    /**
+     * 将源数组追加到目标数组
+     *
+     * @param byte1 Sou1原数组1
+     * @param byte2 Sou2原数组2
+     * @param size   长度
+     * @return  返回一个新的数组，包括了原数组1和原数组2
+     */
+    private fun arrayAppend(byte1: ByteArray?, byte2: ByteArray?, size: Int): ByteArray? {
+        return if (byte1 == null && byte2 == null) {
+            null
+        } else if (byte1 == null) {
+            val byte3 = ByteArray(size)
+            System.arraycopy(byte2, 0, byte3, 0, size)
+            byte3
+        } else if (byte2 == null) {
+            val byte3 = ByteArray(byte1.size)
+            System.arraycopy(byte1, 0, byte3, 0, byte1.size)
+            byte3
+        } else {
+            val byte3 = ByteArray(byte1.size + size)
+            System.arraycopy(byte1, 0, byte3, 0, byte1.size)
+            System.arraycopy(byte2, 0, byte3, byte1.size, size)
+            byte3
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         scope.launch {
             withContext(Dispatchers.IO) {
                 val mSerialPortFinder = SerialPortFinder()
                 val list: MutableList<String> = ArrayList(mSerialPortFinder.allDevs)
-                for (s in resources.getStringArray(R.array.node_index)) if (File(s).exists() && !list.contains(
-                        s
-                    )
-                ) list.add(s)
+                for (s in resources.getStringArray(R.array.node_index)) {
+                    if (File(s).exists() && !list.contains(s)) list.add(s)
+                }
+                list.sort()
                 devList.addAll(list)
             }
         }
+        Thread {
+            try {
+                while (true) {
+                    try {
+                        val buffer = ByteArray(2048)
+                        uartManager?.apply {
+                            if (this.isOpen) {
+                                val length = this.read(buffer, buffer.size, 50, 1)
+                                val data = ByteArray(length)
+                                System.arraycopy(buffer, 0, data, 0, length)
+                                println("vr:" + String(data))
+                            }
+                        }
+                        serialPort?.apply {
+                            if (this.isOpen) {
+                                val size = if (this.inputStream.available() == 0) 0
+                                else this.inputStream.read(buffer)
+                                println("gr:${size}")
+                                if (size > 0) {
+                                    readBytes = arrayAppend(readBytes, buffer, size)
+                                } else {
+                                    readBytes?.apply {
+                                        var sum = 0x00
+                                        this.forEach { sum += it }
+                                        if (sum != 0) {
+                                            println("gr:${String(this)}")
+                                        }
+                                    }
+                                    readBytes = null
+                                }
+                            }
+                        }
+                    } catch (_: Exception) {
+                    }
+                    SystemClock.sleep(50)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }.start()
         setContent {
             NewSerialPortTheme {
                 Surface(
@@ -69,6 +145,7 @@ class MainActivity : ComponentActivity() {
                     var log by remember { mutableStateOf("log:") }
                     var isStill by remember { mutableStateOf(false) }
                     var isHex by remember { mutableStateOf(false) }
+                    var isVan by remember { mutableStateOf(false) }
                     val delayTime = remember { mutableStateOf("200") }
                     val inputValue = remember { mutableStateOf("1B31") }
                     var dev by remember { mutableStateOf("") }
@@ -78,8 +155,17 @@ class MainActivity : ComponentActivity() {
                     var rx by remember { mutableStateOf(0) }
                     val baudList = stringArrayResource(id = R.array.baud)
                     val displayList = stringArrayResource(id = R.array.display)
+                    var isOpen by remember { mutableStateOf(false) }
                     fun log(message: String) {
                         log = "${log}${message}\n"
+                    }
+                    SideEffect {
+                        println("hello side Effect")
+                        scope.launch {
+                            withContext(Dispatchers.Main) {
+                                dev = devList[0]
+                            }
+                        }
                     }
                     Column {
                         Box(
@@ -121,16 +207,14 @@ class MainActivity : ComponentActivity() {
                                             log("选择了串口:${it}")
                                         })
                                     Text(text = "波特率")
-                                    MySpinner(
-                                        items = baudList.toList(),
+                                    MySpinner(items = baudList.toList(),
                                         selectedItem = baud,
                                         onItemSelected = {
                                             baud = it
                                             log("选择了波特率:${it}")
                                         })
                                     Text(text = "显示")
-                                    MySpinner(
-                                        items = displayList.toList(),
+                                    MySpinner(items = displayList.toList(),
                                         selectedItem = display,
                                         onItemSelected = {
                                             display = it
@@ -141,11 +225,47 @@ class MainActivity : ComponentActivity() {
                                         Text(text = "Tx:${tx}")
                                         Text(text = "Rx:${rx}")
                                     }
-                                    Button(onClick = { /*TODO*/ }) {
+                                    Button(onClick = {
+                                        log = ""
+                                        tx = 0
+                                        rx = 0
+                                    }) {
                                         Text(text = "清除")
                                     }
-                                    Button(onClick = { /*TODO*/ }) {
-                                        Text(text = "打开")
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(text = if (isVan) "VSP" else "GSP")
+                                        Checkbox(checked = isVan,
+                                            onCheckedChange = { isVan = !isVan })
+                                    }
+                                    Button(onClick = {
+                                        if (isVan) {
+                                            if (isOpen) {
+                                                uartManager?.close()
+                                                isOpen = false
+                                            } else {
+                                                try {
+                                                    uartManager = UartManager()
+                                                    uartManager?.open(
+                                                        dev.split("/dev/")[1],
+                                                        UartManager.getBaudRate(baud.toInt())
+                                                    )
+                                                    isOpen = true
+                                                } catch (e: LastError) {
+                                                    log("打开异常: $e")
+                                                }
+                                            }
+                                        } else {
+                                            if (isOpen) {
+                                                serialPort?.close2()
+                                                isOpen = false
+                                            } else {
+                                                serialPort =
+                                                    SerialPort(File(dev), baud.toInt(), 0, 8, 1, 0)
+                                                isOpen = true
+                                            }
+                                        }
+                                    }) {
+                                        Text(text = if (isOpen) "关闭" else "打开")
                                     }
                                 }
                             }
@@ -166,7 +286,9 @@ class MainActivity : ComponentActivity() {
                             EditText(inputValue)
                             Text(text = "Hex")
                             Checkbox(checked = isHex, onCheckedChange = { isHex = !isHex })
-                            Button(onClick = {}) { Text(text = "发送") }
+                            Button(onClick = {
+                                tx += 1
+                            }) { Text(text = "发送") }
                         }
                     }
                 }
@@ -182,9 +304,7 @@ fun EditText(inputValue: MutableState<String>) {
         onValueChange = { inputValue.value = it },
         modifier = Modifier
             .border(
-                width = 0.5.dp,
-                color = Color.Black,
-                shape = RoundedCornerShape(1.dp)
+                width = 0.5.dp, color = Color.Black, shape = RoundedCornerShape(1.dp)
             )
             .padding(3.dp),
     )

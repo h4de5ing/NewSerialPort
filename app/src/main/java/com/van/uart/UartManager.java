@@ -6,8 +6,8 @@ public class UartManager {
         System.loadLibrary("VanUart");
     }
 
-    public static enum BaudRate {
-        B1200, B2400, B4800, B9600, B19200, B38400, B57600, B115200, B230400;
+    public enum BaudRate {
+        B1200, B2400, B4800, B9600, B19200, B38400, B57600, B115200, B230400
     }
 
     private int id;
@@ -28,26 +28,18 @@ public class UartManager {
         return baudRate;
     }
 
-    public static BaudRate getBaudRate(int baudrate) {
-        BaudRate value = null;
-        switch (baudrate) {
-            case 9600:
-                value = BaudRate.B9600;
-                break;
-            case 19200:
-                value = BaudRate.B19200;
-                break;
-            case 57600:
-                value = BaudRate.B57600;
-                break;
-            case 115200:
-                value = BaudRate.B115200;
-                break;
-            case 230400:
-                value = BaudRate.B230400;
-                break;
-        }
-        return value;
+    public static BaudRate getBaudRate(int baudRate) {
+        return switch (baudRate) {
+            case 1200 -> BaudRate.B1200;
+            case 2400 -> BaudRate.B2400;
+            case 4800 -> BaudRate.B4800;
+            case 9600 -> BaudRate.B9600;
+            case 19200 -> BaudRate.B19200;
+            case 38400 -> BaudRate.B38400;
+            case 57600 -> BaudRate.B57600;
+            case 230400 -> BaudRate.B230400;
+            default -> BaudRate.B115200;
+        };
     }
 
     public void open(String name, BaudRate baudRate) throws LastError {
@@ -68,9 +60,7 @@ public class UartManager {
     }
 
     public void close() {
-        if (-1 != id) {
-            close(id);
-        }
+        if (-1 != id) close(id);
     }
 
     public int getId() {
@@ -82,32 +72,22 @@ public class UartManager {
     }
 
     public boolean isOpen() {
-        if (-1 != id) {
-            return isOpen(id);
-        }
-
+        if (-1 != id) return isOpen(id);
         return false;
     }
 
     public int write(final byte[] data, int size) throws LastError {
-        if (-1 != id) {
-            return write(id, data, size);
-        }
-
+        if (-1 != id) return write(id, data, size);
         return -1;
     }
 
     public int read(byte[] buf, int size, int wait, int interval) throws LastError {
-        if (-1 != id) {
-            return read(id, buf, size, wait, interval);
-        }
+        if (-1 != id) return read(id, buf, size, wait, interval);
         return -1;
     }
 
     public void stopRead() {
-        if (-1 != id) {
-            stopRead(id);
-        }
+        if (-1 != id) stopRead(id);
     }
 
     public static native String[] devices();
