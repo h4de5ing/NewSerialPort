@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="baud">
+        <item>200</item>
+        <item>300</item>
+        <item>600</item>
+        <item>1200</item>
+        <item>1800</item>
+        <item>2400</item>
+        <item>4800</item>
+        <item>9600</item>
+        <item>19200</item>
+        <item>38400</item>
+        <item>57600</item>
+        <item>115200</item>
+        <item>230400</item>
+        <item>460800</item>
+        <item>500000</item>
+        <item>576000</item>
+        <item>921600</item>
+        <item>1000000</item>
+        <item>1152000</item>
+    </string-array>
+
+    <string-array name="display">
+        <item>HEX</item>
+        <item>ASCII</item>
+        <item>HEX(fast)</item>
+        <item>ASCII(fast)</item>
+        <item>ASCII(Enter)</item>
+    </string-array>
+    <string-array name="soc_which_module">
+        <item>GPS/Beidou</item>
+        <item>barcode</item>
+        <item>IDCard</item>
+        <item>Fingerprint</item>
+    </string-array>
+    <string-array name="node_index">
+        <item>/dev/ttyUSB0</item>
+        <item>/dev/ttyUSB1</item>
+        <item>/dev/ttyUW1</item>
+        <item>/dev/ttyUW2</item>
+        <item>/dev/ttySWK3</item>
+        <item>/dev/ttyMSM0</item>
+        <item>/dev/ttyMSM1</item>
+        <item>/dev/ttyMSM2</item>
+        <item>/dev/ttyMSM3</item>
+    </string-array>
+</resources>
