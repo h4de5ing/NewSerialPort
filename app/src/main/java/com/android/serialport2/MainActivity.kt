@@ -19,8 +19,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
@@ -30,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -40,6 +43,8 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.android.serialport2.ui.MainViewModel
 import com.android.serialport2.ui.MySpinner
 import com.android.serialport2.ui.theme.NewSerialPortTheme
 import com.van.uart.LastError
@@ -56,7 +61,9 @@ class MainActivity : ComponentActivity() {
     private var serialPort: SerialPort? = null
     private var uartManager: UartManager? = null
     private var readBytes: ByteArray? = null
-
+    private var uiState by mutableStateOf(String)
+    private var mainView = MainViewModel()
+    //TODO 通过ViewModel共享数据变化
     /**
      * 将源数组追加到目标数组
      *
@@ -88,6 +95,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         scope.launch {
             withContext(Dispatchers.IO) {
+                UartManager.devices().forEach {
+                    println("遍历:${it}")
+                }
                 val mSerialPortFinder = SerialPortFinder()
                 val list: MutableList<String> = ArrayList(mSerialPortFinder.allDevs)
                 for (s in resources.getStringArray(R.array.node_index)) {
@@ -108,6 +118,8 @@ class MainActivity : ComponentActivity() {
                                 val data = ByteArray(length)
                                 System.arraycopy(buffer, 0, data, 0, length)
                                 println("vr:" + String(data))
+                                mainView.update(data)
+                                mainView.increaseCounter(length * 1L)
                             }
                         }
                         serialPort?.apply {
@@ -123,6 +135,8 @@ class MainActivity : ComponentActivity() {
                                         this.forEach { sum += it }
                                         if (sum != 0) {
                                             println("gr:${String(this)}")
+                                            mainView.update(this)
+                                            mainView.increaseCounter(this.size * 1L)
                                         }
                                     }
                                     readBytes = null
@@ -140,8 +154,13 @@ class MainActivity : ComponentActivity() {
         setContent {
             NewSerialPortTheme {
                 Surface(
-                    modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
                 ) {
+                    val scrollState = rememberScrollState()
+                    val model: MainViewModel = viewModel()
+                    val data2 = model.data2.observeAsState()
+                    val rx = model.counterLiveData.observeAsState(0)
                     var log by remember { mutableStateOf("log:") }
                     var isStill by remember { mutableStateOf(false) }
                     var isHex by remember { mutableStateOf(false) }
@@ -152,7 +171,7 @@ class MainActivity : ComponentActivity() {
                     var baud by remember { mutableStateOf("115200") }
                     var display by remember { mutableStateOf("Hex") }
                     var tx by remember { mutableStateOf(0) }
-                    var rx by remember { mutableStateOf(0) }
+//                    var rx by remember { mutableStateOf(0) }
                     val baudList = stringArrayResource(id = R.array.baud)
                     val displayList = stringArrayResource(id = R.array.display)
                     var isOpen by remember { mutableStateOf(false) }
@@ -163,7 +182,7 @@ class MainActivity : ComponentActivity() {
                         println("hello side Effect")
                         scope.launch {
                             withContext(Dispatchers.Main) {
-                                dev = devList[0]
+                                kotlin.runCatching { dev = devList[0] }
                             }
                         }
                     }
@@ -189,7 +208,18 @@ class MainActivity : ComponentActivity() {
                                             shape = RoundedCornerShape(1.dp)
                                         )
                                         .padding(5.dp)
-                                ) { Text(text = log, fontSize = 14.sp) }
+                                ) {
+                                    Text(
+                                        text = String(
+                                            data2.value ?: byteArrayOf(
+                                                0x6E,
+                                                0x6F,
+                                                0x6E,
+                                                0x65
+                                            )
+                                        ), fontSize = 14.sp
+                                    )
+                                }
                                 Column(
                                     modifier = Modifier
                                         .width(
@@ -197,6 +227,7 @@ class MainActivity : ComponentActivity() {
                                         )
                                         .fillMaxHeight()
                                         .padding(5.dp)
+                                        .verticalScroll(scrollState)
                                 ) {
                                     Text(text = "串口节点")
                                     MySpinner(
@@ -223,12 +254,13 @@ class MainActivity : ComponentActivity() {
                                     Text(text = "状态")
                                     Column {
                                         Text(text = "Tx:${tx}")
-                                        Text(text = "Rx:${rx}")
+                                        Text(text = "Rx:${rx.value}")
                                     }
                                     Button(onClick = {
                                         log = ""
                                         tx = 0
-                                        rx = 0
+//                                        rx = 0
+                                        mainView.increaseCounter(0L)
                                     }) {
                                         Text(text = "清除")
                                     }

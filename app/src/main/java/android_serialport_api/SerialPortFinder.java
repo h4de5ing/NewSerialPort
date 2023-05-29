@@ -31,11 +31,8 @@ public class SerialPortFinder {
 
     public static class Driver {
         public Driver(String name, String root) {
-            mDriverName = name;
             mDeviceRoot = root;
         }
-
-        private final String mDriverName;
         private final String mDeviceRoot;
         Vector<File> mDevices = null;
 
@@ -52,10 +49,6 @@ public class SerialPortFinder {
                 }
             }
             return mDevices;
-        }
-
-        public String getName() {
-            return mDriverName;
         }
     }
 
@@ -79,38 +72,6 @@ public class SerialPortFinder {
             r.close();
         }
         return mDrivers;
-    }
-
-    public String[] getAllDevices() {
-        Vector<String> devices = new Vector<>();
-        try {
-            for (Driver driver : getDrivers()) {
-                for (File file : driver.getDevices()) {
-                    String device = file.getName();
-                    String value = String.format("%s (%s)", device, driver.getName());
-                    devices.add(value);
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return devices.toArray(new String[0]);
-    }
-
-    public String[] getAllDevicesPath() {
-        Vector<String> devices = new Vector<>();
-        try {
-            for (Driver driver : getDrivers()) {
-                for (File file : driver.getDevices()) {
-                    String device = file.getAbsolutePath();
-                    System.out.println(device);
-                    devices.add(device);
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return devices.toArray(new String[0]);
     }
 
     public List<String> getAllDevs() {
