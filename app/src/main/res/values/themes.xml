@@ -2,6 +2,6 @@
 <resources>
 
     <style name="Theme.NewSerialPort" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:windowFullscreen">true</item>
+<!--        <item name="android:windowFullscreen">true</item>-->
     </style>
 </resources>

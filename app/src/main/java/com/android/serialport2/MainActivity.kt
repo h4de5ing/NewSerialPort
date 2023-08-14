@@ -154,13 +154,12 @@ class MainActivity : ComponentActivity() {
         setContent {
             NewSerialPortTheme {
                 Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
                 ) {
                     val scrollState = rememberScrollState()
                     val model: MainViewModel = viewModel()
                     val data2 = model.data2.observeAsState()
-                    val rx = model.counterLiveData.observeAsState(0)
+//                    val rx = model.counterLiveData.observeAsState(0)
                     var log by remember { mutableStateOf("log:") }
                     var isStill by remember { mutableStateOf(false) }
                     var isHex by remember { mutableStateOf(false) }
@@ -171,7 +170,7 @@ class MainActivity : ComponentActivity() {
                     var baud by remember { mutableStateOf("115200") }
                     var display by remember { mutableStateOf("Hex") }
                     var tx by remember { mutableStateOf(0) }
-//                    var rx by remember { mutableStateOf(0) }
+                    var rx by remember { mutableStateOf(0) }
                     val baudList = stringArrayResource(id = R.array.baud)
                     val displayList = stringArrayResource(id = R.array.display)
                     var isOpen by remember { mutableStateOf(false) }
@@ -212,10 +211,7 @@ class MainActivity : ComponentActivity() {
                                     Text(
                                         text = String(
                                             data2.value ?: byteArrayOf(
-                                                0x6E,
-                                                0x6F,
-                                                0x6E,
-                                                0x65
+                                                0x6E, 0x6F, 0x6E, 0x65
                                             )
                                         ), fontSize = 14.sp
                                     )
@@ -230,8 +226,7 @@ class MainActivity : ComponentActivity() {
                                         .verticalScroll(scrollState)
                                 ) {
                                     Text(text = "串口节点")
-                                    MySpinner(
-                                        items = devList,
+                                    MySpinner(items = devList,
                                         selectedItem = dev,
                                         onItemSelected = {
                                             dev = it
@@ -254,20 +249,19 @@ class MainActivity : ComponentActivity() {
                                     Text(text = "状态")
                                     Column {
                                         Text(text = "Tx:${tx}")
-                                        Text(text = "Rx:${rx.value}")
+                                        Text(text = "Rx:${rx}")
                                     }
                                     Button(onClick = {
                                         log = ""
                                         tx = 0
-//                                        rx = 0
+                                        rx = 0
                                         mainView.increaseCounter(0L)
-                                    }) {
+                                    }, shape = RoundedCornerShape(0.dp)) {
                                         Text(text = "清除")
                                     }
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(text = if (isVan) "Van" else "Google")
-                                        Checkbox(
-                                            checked = isVan,
+                                        Checkbox(checked = isVan,
                                             onCheckedChange = { isVan = !isVan })
                                     }
                                     Button(onClick = {
@@ -292,12 +286,17 @@ class MainActivity : ComponentActivity() {
                                                 serialPort?.close2()
                                                 isOpen = false
                                             } else {
-                                                serialPort =
-                                                    SerialPort(File(dev), baud.toInt(), 0, 8, 1, 0)
-                                                isOpen = true
+                                                try {
+                                                    serialPort = SerialPort(
+                                                        File(dev), baud.toInt(), 0, 8, 1, 0
+                                                    )
+                                                    isOpen = true
+                                                } catch (e: Exception) {
+                                                    log("打开异常: $e")
+                                                }
                                             }
                                         }
-                                    }) {
+                                    }, shape = RoundedCornerShape(0.dp)) {
                                         Text(text = if (isOpen) "关闭" else "打开")
                                     }
                                 }
@@ -319,8 +318,10 @@ class MainActivity : ComponentActivity() {
                             EditText(inputValue)
                             Text(text = "Hex")
                             Checkbox(checked = isHex, onCheckedChange = { isHex = !isHex })
-                            Button(onClick = {
-                            }) { Text(text = "发送") }
+                            Button(
+                                onClick = {},
+                                shape = RoundedCornerShape(0.dp)
+                            ) { Text(text = "发送") }
                         }
                     }
                 }
