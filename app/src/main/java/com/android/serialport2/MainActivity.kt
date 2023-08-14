@@ -136,6 +136,7 @@ class MainActivity : ComponentActivity() {
                 e.printStackTrace()
             }
         }.start()
+        //TODO 默认值保存到sp里面，第一次加载上次保存
         setContent {
             NewSerialPortTheme {
                 Surface(
@@ -289,22 +290,35 @@ class MainActivity : ComponentActivity() {
                         }
                         Row(
                             modifier = Modifier
-//                                .height((LocalConfiguration.current.screenHeightDp * 0.1f).dp)
                                 .wrapContentHeight()
                                 .fillMaxWidth()
-                                .padding(5.dp),
-                            horizontalArrangement = Arrangement.spacedBy(5.dp),
+                                .padding(2.dp),
+                            horizontalArrangement = Arrangement.spacedBy(3.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text(text = "定时")
+                            Text(text = "定时(ms)")
                             EditText(delayTime)
                             Text(text = "Auto")
                             Checkbox(checked = isStill, onCheckedChange = { isStill = !isStill })
-                            EditText(inputValue)
                             Text(text = "Hex")
                             Checkbox(checked = isHex, onCheckedChange = { isHex = !isHex })
+                            Column(Modifier.weight(1f)) {
+                                BasicTextField(
+                                    value = inputValue.value,
+                                    onValueChange = { inputValue.value = it },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .border(
+                                            width = 0.5.dp,
+                                            color = Color.Black,
+                                            shape = RoundedCornerShape(1.dp)
+                                        )
+                                        .padding(3.dp),
+                                )
+                            }
                             Button(
-                                onClick = {}, shape = RoundedCornerShape(0.dp)
+                                onClick = {}, shape = RoundedCornerShape(0.dp),
+                                modifier = Modifier.padding(start = 10.dp, end = 10.dp)
                             ) { Text(text = "发送") }
                         }
                     }
