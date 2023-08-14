@@ -2,6 +2,7 @@ package com.android.serialport2
 
 import android.os.Bundle
 import android.os.SystemClock
+import android.text.TextUtils
 import android_serialport_api.SerialPort
 import android_serialport_api.SerialPortFinder
 import androidx.activity.ComponentActivity
@@ -32,7 +33,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -57,7 +57,6 @@ import java.io.File
 
 class MainActivity : ComponentActivity() {
     private val scope = MainScope()
-    private val devList = mutableListOf<String>()
     private var serialPort: SerialPort? = null
     private var uartManager: UartManager? = null
     private var readBytes: ByteArray? = null
@@ -93,28 +92,14 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        scope.launch {
-            withContext(Dispatchers.IO) {
-                UartManager.devices().forEach {
-                    println("遍历:${it}")
-                }
-                val mSerialPortFinder = SerialPortFinder()
-                val list: MutableList<String> = ArrayList(mSerialPortFinder.allDevs)
-                for (s in resources.getStringArray(R.array.node_index)) {
-                    if (File(s).exists() && !list.contains(s)) list.add(s)
-                }
-                list.sort()
-                devList.addAll(list)
-            }
-        }
         Thread {
             try {
                 while (true) {
                     try {
                         val buffer = ByteArray(2048)
                         uartManager?.apply {
-                            if (this.isOpen) {
-                                val length = this.read(buffer, buffer.size, 50, 1)
+                            if (isOpen) {
+                                val length = read(buffer, buffer.size, 50, 1)
                                 val data = ByteArray(length)
                                 System.arraycopy(buffer, 0, data, 0, length)
                                 println("vr:" + String(data))
@@ -123,20 +108,20 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                         serialPort?.apply {
-                            if (this.isOpen) {
-                                val size = if (this.inputStream.available() == 0) 0
-                                else this.inputStream.read(buffer)
+                            if (isOpen) {
+                                val size = if (inputStream.available() == 0) 0
+                                else inputStream.read(buffer)
                                 println("gr:${size}")
                                 if (size > 0) {
                                     readBytes = arrayAppend(readBytes, buffer, size)
                                 } else {
                                     readBytes?.apply {
                                         var sum = 0x00
-                                        this.forEach { sum += it }
+                                        forEach { sum += it }
                                         if (sum != 0) {
                                             println("gr:${String(this)}")
                                             mainView.update(this)
-                                            mainView.increaseCounter(this.size * 1L)
+                                            mainView.increaseCounter(size * 1L)
                                         }
                                     }
                                     readBytes = null
@@ -158,9 +143,10 @@ class MainActivity : ComponentActivity() {
                 ) {
                     val scrollState = rememberScrollState()
                     val model: MainViewModel = viewModel()
-                    val data2 = model.data2.observeAsState()
+//                    val data2 = model.data2.observeAsState()
 //                    val rx = model.counterLiveData.observeAsState(0)
-                    var log by remember { mutableStateOf("log:") }
+                    var devices by remember { mutableStateOf(emptyList<String>()) }
+                    var log by remember { mutableStateOf("") }
                     var isStill by remember { mutableStateOf(false) }
                     var isHex by remember { mutableStateOf(false) }
                     var isVan by remember { mutableStateOf(false) }
@@ -180,8 +166,13 @@ class MainActivity : ComponentActivity() {
                     SideEffect {
                         println("hello side Effect")
                         scope.launch {
-                            withContext(Dispatchers.Main) {
-                                kotlin.runCatching { dev = devList[0] }
+                            withContext(Dispatchers.IO) {
+                                val newList = SerialPortFinder().allDevs
+                                newList.addAll(
+                                    resources.getStringArray(R.array.node_index).toList()
+                                )
+                                devices = newList.distinct().filter { File(it).exists() }.sorted()
+                                kotlin.runCatching { if (TextUtils.isEmpty(dev)) dev = devices[0] }
                             }
                         }
                     }
@@ -208,13 +199,7 @@ class MainActivity : ComponentActivity() {
                                         )
                                         .padding(5.dp)
                                 ) {
-                                    Text(
-                                        text = String(
-                                            data2.value ?: byteArrayOf(
-                                                0x6E, 0x6F, 0x6E, 0x65
-                                            )
-                                        ), fontSize = 14.sp
-                                    )
+                                    Text(text = log, fontSize = 14.sp)
                                 }
                                 Column(
                                     modifier = Modifier
@@ -226,7 +211,7 @@ class MainActivity : ComponentActivity() {
                                         .verticalScroll(scrollState)
                                 ) {
                                     Text(text = "串口节点")
-                                    MySpinner(items = devList,
+                                    MySpinner(items = devices,
                                         selectedItem = dev,
                                         onItemSelected = {
                                             dev = it
@@ -319,8 +304,7 @@ class MainActivity : ComponentActivity() {
                             Text(text = "Hex")
                             Checkbox(checked = isHex, onCheckedChange = { isHex = !isHex })
                             Button(
-                                onClick = {},
-                                shape = RoundedCornerShape(0.dp)
+                                onClick = {}, shape = RoundedCornerShape(0.dp)
                             ) { Text(text = "发送") }
                         }
                     }

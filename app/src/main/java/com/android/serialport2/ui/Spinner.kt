@@ -53,7 +53,7 @@ fun <T> Spinner(
     itemContent: @Composable (data: T, modifier: Modifier) -> Unit,
 ) {
     //下拉箭头旋转角度
-    val degrees: Float by animateFloatAsState(targetValue = if (expanded) 0f else 90f)
+    val degrees: Float by animateFloatAsState(targetValue = if (expanded) 0f else 90f, label = "")
 
     Column(modifier = modifier) {
         Row(modifier = Modifier.clickable(enabled = enabled) { expandedChange.invoke(!expanded) }) {

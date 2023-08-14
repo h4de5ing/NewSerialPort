@@ -45,5 +45,9 @@
         <item>/dev/ttyMSM1</item>
         <item>/dev/ttyMSM2</item>
         <item>/dev/ttyMSM3</item>
+        <item>/dev/ttyHS0</item>
+        <item>/dev/ttyHS1</item>
+        <item>/dev/ttyHS2</item>
+        <item>/dev/ttyHS3</item>
     </string-array>
 </resources>

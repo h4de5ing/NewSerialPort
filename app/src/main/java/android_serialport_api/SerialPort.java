@@ -38,7 +38,7 @@ public class SerialPort {
     public SerialPort(File device, int baudRate, int parity, int dataBits, int stopBit, int flags) throws SecurityException, IOException {
         mFd = open(device.getAbsolutePath(), baudRate, parity, dataBits, stopBit, flags);
         if (mFd == null) {
-            Log.e("serial_port", "串口打开异常");
+            Log.e("serial_port", device.getAbsolutePath() + " 串口打开异常");
             throw new IOException();
         }
         mFileInputStream = new FileInputStream(mFd);
