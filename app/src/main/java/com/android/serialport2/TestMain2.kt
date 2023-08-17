@@ -27,10 +27,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,7 +41,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.serialport2.ui.theme.NewSerialPortTheme
 import com.android.serialport2.ui.viewmodel.SerialViewModel
-import kotlinx.coroutines.flow.onEach
 
 class TestMain2 : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,11 +65,9 @@ fun Test() {
     }
 
     val viewModel = viewModel<SerialViewModel>()
-    val serialData = viewModel.serialData.collectAsState()
-    LaunchedEffect(true) {
-        viewModel._serialData.onEach {
-            log("有数据来了:${String(it)}")
-        }
+    val scope = rememberCoroutineScope()
+    LaunchedEffect(viewModel.serialData) {
+        viewModel.serialData.collect { log(String(it)) }
     }
     var isStill by remember { mutableStateOf(false) }
     var isHex by remember { mutableStateOf(false) }
@@ -97,13 +94,13 @@ fun Test() {
                         )
                         .fillMaxHeight()
                         .border(
-                            width = 1.dp,
-                            color = Color.Black,
-                            shape = RoundedCornerShape(1.dp)
+                            width = 1.dp, color = Color.Black, shape = RoundedCornerShape(1.dp)
                         )
                         .padding(5.dp)
                 ) {
-                    Text(text = log, fontSize = 14.sp)
+                    Text(
+                        text = log, fontSize = 14.sp
+                    )
                 }
                 Column(
                     modifier = Modifier
@@ -128,11 +125,13 @@ fun Test() {
                     }
 
                     Button(onClick = {
-                        val result = kotlin.runCatching {
+                        try {
                             viewModel.setupSerial("/dev/ttyUSB0", 115200)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
                         }
-                        isOpen = result.isSuccess
-                        log(if (result.isSuccess) "打开成功" else "打开失败")
+                        isOpen = viewModel.isOpen()
+                        log(if (isOpen) "打开成功" else "打开失败")
                     }, shape = RoundedCornerShape(0.dp)) {
                         Text(text = if (isOpen) "关闭" else "打开")
                     }
@@ -158,15 +157,16 @@ fun Test() {
                     modifier = Modifier
                         .fillMaxWidth()
                         .border(
-                            width = 0.5.dp,
-                            color = Color.Black,
-                            shape = RoundedCornerShape(1.dp)
+                            width = 0.5.dp, color = Color.Black, shape = RoundedCornerShape(1.dp)
                         )
                         .padding(3.dp),
                 )
             }
             Button(
-                onClick = {}, shape = RoundedCornerShape(0.dp),
+                onClick = {
+                    viewModel.write(inputValue.value.toByteArray())
+                },
+                shape = RoundedCornerShape(0.dp),
                 modifier = Modifier.padding(start = 10.dp, end = 10.dp)
             ) { Text(text = "发送") }
         }

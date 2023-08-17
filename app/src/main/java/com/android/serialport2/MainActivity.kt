@@ -280,7 +280,7 @@ class MainActivity : ComponentActivity() {
                                             } else {
                                                 try {
                                                     serialPort = SerialPort(
-                                                        File(dev), baud.toInt(), 0, 8, 1, 0
+                                                        File(dev), baud.toInt(), 0
                                                     )
                                                     isOpen = true
                                                 } catch (e: Exception) {
