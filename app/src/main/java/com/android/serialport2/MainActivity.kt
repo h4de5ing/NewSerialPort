@@ -5,7 +5,6 @@ import android.text.TextUtils
 import android_serialport_api.SerialPortFinder
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -96,22 +95,11 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun HomeContent(mainView: MainViewModel = viewModel()) {
     var log by remember { mutableStateOf("") }
     var rx by remember { mutableStateOf(0) }
     var tx by remember { mutableStateOf(0) }
-    fun log(message: String) {
-        if (!TextUtils.isEmpty(message))
-            log = "${log}${message}\n"
-    }
-    LaunchedEffect(mainView.serialData) {
-        mainView.serialData.collect {
-            rx += it.size
-            log(String(it))
-        }
-    }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var devices by remember { mutableStateOf(emptyList<String>()) }
@@ -120,13 +108,23 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
     var isVan by remember { mutableStateOf(false) }
     val delayTime = remember { mutableStateOf("200") }
     val inputValue = remember { mutableStateOf("1B31") }
-    var dev by remember { mutableStateOf("/dev/ttyUSB0") }
-    var baud by remember { mutableStateOf("115200") }
+    var dev by remember { mutableStateOf("") }
+    var baud by remember { mutableStateOf("") }
     var display by remember { mutableStateOf("Hex") }
     val baudList = stringArrayResource(id = R.array.baud)
     val displayList = stringArrayResource(id = R.array.display)
     var isOpen by remember { mutableStateOf(false) }
-
+    val scrollState = rememberScrollState()
+    fun log(message: String) {
+        if (!TextUtils.isEmpty(message)) log = "${log}${message}\n"
+    }
+    LaunchedEffect(mainView.serialData) {
+        mainView.serialData.collect {
+            rx += it.size
+            log(String(it))
+            scrollState.scrollTo(scrollState.maxValue)
+        }
+    }
     SideEffect {
         scope.launch {
             withContext(Dispatchers.IO) {
@@ -134,8 +132,13 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
                 newList.addAll(
                     context.resources.getStringArray(R.array.node_index).toList()
                 )
+                App.sp.getString("dev", "")?.apply { if (!TextUtils.isEmpty(this)) dev = this }
+                App.sp.getString("baud", "")?.apply { if (!TextUtils.isEmpty(this)) baud = this }
                 devices = newList.distinct().filter { File(it).exists() }.sorted()
-                runCatching { if (TextUtils.isEmpty(dev)) dev = devices[0] }
+                runCatching {
+                    if (TextUtils.isEmpty(dev)) dev = devices[0]
+                    if (TextUtils.isEmpty(baud)) baud = baudList[0]
+                }
             }
         }
     }
@@ -159,7 +162,7 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
                             width = 1.dp, color = Color.Black, shape = RoundedCornerShape(1.dp)
                         )
                         .padding(5.dp)
-                        .verticalScroll(rememberScrollState())
+                        .verticalScroll(scrollState)
                 ) {
                     Text(text = log, modifier = Modifier.fillMaxSize())
                 }
@@ -175,10 +178,12 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
                     Text(text = "串口节点")
                     MySpinner(items = devices, selectedItem = dev, onItemSelected = {
                         dev = it
+                        App.sp.edit().putString("dev", it).apply()
                     })
                     Text(text = "波特率")
                     MySpinner(items = baudList.toList(), selectedItem = baud, onItemSelected = {
                         baud = it
+                        App.sp.edit().putString("baud", it).apply()
                     })
                     Text(text = "显示")
                     MySpinner(
