@@ -12,7 +12,7 @@
         android:theme="@style/Theme.NewSerialPort"
         tools:targetApi="31">
         <activity
-            android:name=".TestMain2"
+            android:name=".MainActivity"
             android:exported="true"
             android:screenOrientation="landscape"
             android:theme="@style/Theme.NewSerialPort">
