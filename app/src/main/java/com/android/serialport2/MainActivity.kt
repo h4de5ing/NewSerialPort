@@ -32,6 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -112,6 +113,7 @@ class MainActivity : ComponentActivity() {
                                 val size = if (inputStream.available() == 0) 0
                                 else inputStream.read(buffer)
                                 println("gr:${size}")
+                                mainView.updateUartData("gr:${size} ${System.currentTimeMillis()}".toByteArray())
                                 if (size > 0) {
                                     readBytes = arrayAppend(readBytes, buffer, size)
                                 } else {
@@ -126,6 +128,7 @@ class MainActivity : ComponentActivity() {
                                     }
                                     readBytes = null
                                 }
+                                //TODO 更新数据
                             }
                         }
                     } catch (_: Exception) {
@@ -143,7 +146,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
                 ) {
                     val scrollState = rememberScrollState()
-                    val model: MainViewModel = viewModel()
+                    val viewModel: MainViewModel = viewModel()
 //                    val data2 = model.data2.observeAsState()
 //                    val rx = model.counterLiveData.observeAsState(0)
                     var devices by remember { mutableStateOf(emptyList<String>()) }
@@ -164,6 +167,9 @@ class MainActivity : ComponentActivity() {
                     fun log(message: String) {
                         log = "${log}${message}\n"
                     }
+                    val uartData by viewModel.uartData.collectAsState()
+
+//                    Text(text = uartData.toString(Charsets.UTF_8))
                     SideEffect {
                         println("hello side Effect")
                         scope.launch {
@@ -200,7 +206,7 @@ class MainActivity : ComponentActivity() {
                                         )
                                         .padding(5.dp)
                                 ) {
-                                    Text(text = log, fontSize = 14.sp)
+                                    Text(text = uartData.toString(Charsets.UTF_8), fontSize = 14.sp)
                                 }
                                 Column(
                                     modifier = Modifier
