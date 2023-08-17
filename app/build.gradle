@@ -5,12 +5,12 @@ plugins {
 
 android {
     namespace 'com.android.serialport2'
-    compileSdk 33
+    compileSdk 34
 
     defaultConfig {
         applicationId "com.android.serialport2"
         minSdk 24
-        targetSdk 33
+        targetSdk 34
         versionCode 1
         versionName "1.0"
 
@@ -19,23 +19,21 @@ android {
             useSupportLibrary true
         }
         //noinspection ChromeOsAbiSupport
-        ndk { abiFilters 'armeabi-v7a', 'armeabi' }
-    }
-    sourceSets {
-        main {
-            jniLibs.srcDirs = ['libs']
-        }
+        ndk { abiFilters 'armeabi' }
     }
     signingConfigs {
         sign {
-            //T50 T195 Q66 Q865M_Q115M_android11 Q86  Q86M Q81 SwingA
-            storeFile file("D:\\Android12SignerGUI\\SignFiles\\T60\\platform.jks")
+            storeFile file("D:\\Android12SignerGUI\\SignFiles\\Q865M_Q115M_android11_gms\\platform.jks")
             storePassword('android')
             keyAlias('android')
             keyPassword('android')
         }
     }
     buildTypes {
+        debug {
+            minifyEnabled false
+            signingConfig signingConfigs.sign
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
@@ -57,6 +55,11 @@ android {
     packagingOptions {
         resources {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'
+        }
+    }
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['src/main/jniLibs']
         }
     }
 }

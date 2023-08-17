@@ -9,7 +9,7 @@ import kotlin.concurrent.thread
 
 class SerialViewModel : ViewModel() {
 
-    private val _serialData = MutableStateFlow(ByteArray(0))
+    val _serialData = MutableStateFlow(ByteArray(0))
     val serialData = _serialData.asStateFlow()
 
     private var serialPort: SerialPort? = null

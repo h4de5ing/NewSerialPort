@@ -26,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,6 +41,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.serialport2.ui.theme.NewSerialPortTheme
 import com.android.serialport2.ui.viewmodel.SerialViewModel
+import kotlinx.coroutines.flow.onEach
 
 class TestMain2 : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,8 +60,18 @@ class TestMain2 : ComponentActivity() {
 
 @Composable
 fun Test() {
+    var log by remember { mutableStateOf("") }
+    fun log(message: String) {
+        log = "${log}${message}\n"
+    }
+
     val viewModel = viewModel<SerialViewModel>()
     val serialData = viewModel.serialData.collectAsState()
+    LaunchedEffect(true) {
+        viewModel._serialData.onEach {
+            log("有数据来了:${String(it)}")
+        }
+    }
     var isStill by remember { mutableStateOf(false) }
     var isHex by remember { mutableStateOf(false) }
     val inputValue = remember { mutableStateOf("1B31") }
@@ -67,10 +79,7 @@ fun Test() {
     var tx by remember { mutableStateOf(0) }
     var rx by remember { mutableStateOf(0) }
     var isOpen by remember { mutableStateOf(false) }
-    var log by remember { mutableStateOf("") }
-    fun log(message: String) {
-        log = "${log}${message}\n"
-    }
+
     Column {
         Box(
             modifier = Modifier
@@ -94,7 +103,7 @@ fun Test() {
                         )
                         .padding(5.dp)
                 ) {
-                    Text(text = serialData.value.toString(Charsets.UTF_8), fontSize = 14.sp)
+                    Text(text = log, fontSize = 14.sp)
                 }
                 Column(
                     modifier = Modifier
