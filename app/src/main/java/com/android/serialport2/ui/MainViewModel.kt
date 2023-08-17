@@ -1,7 +1,6 @@
 package com.android.serialport2.ui
 
 import android_serialport_api.SerialPort
-import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,10 +13,6 @@ class MainViewModel : ViewModel() {
     private var serialPort: SerialPort? = null
     private val _serialData = MutableStateFlow(ByteArray(0))
     val serialData = _serialData.asStateFlow()
-    private var _tx = MutableStateFlow(0)
-    private var _rx = MutableStateFlow(0)
-    val tx = _tx.asStateFlow()
-    val rx = _rx.asStateFlow()
     fun setupSerial(path: String, baudRate: Int) {
         serialPort = SerialPort(File(path), baudRate, 0)
         thread {
@@ -28,10 +23,7 @@ class MainViewModel : ViewModel() {
                     val data = ByteArray(size)
                     System.arraycopy(buffer, 0, data, 0, size)
                     println("serial_port ${String(data)}")
-                    viewModelScope.launch {
-                        _rx = MutableStateFlow(_rx.value + size)
-                        _serialData.value = data
-                    }
+                    viewModelScope.launch { _serialData.value = data }
                 }
             }
         }
@@ -40,7 +32,6 @@ class MainViewModel : ViewModel() {
     fun isOpen(): Boolean = serialPort?.isOpen ?: false
 
     fun write(data: ByteArray) {
-        viewModelScope.launch { _tx = MutableStateFlow(_tx.value + data.size) }
         serialPort?.outputStream?.write(data)
     }
 
@@ -50,10 +41,5 @@ class MainViewModel : ViewModel() {
 
     override fun onCleared() {
         serialPort?.close2()
-    }
-
-    fun resetCounter() {
-        _tx = MutableStateFlow(0)
-        _rx = MutableStateFlow(0)
     }
 }

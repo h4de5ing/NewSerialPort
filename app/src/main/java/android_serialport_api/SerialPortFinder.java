@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.LineNumberReader;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Vector;
 
 public class SerialPortFinder {
@@ -33,6 +32,7 @@ public class SerialPortFinder {
         public Driver(String name, String root) {
             mDeviceRoot = root;
         }
+
         private final String mDeviceRoot;
         Vector<File> mDevices = null;
 
@@ -41,10 +41,12 @@ public class SerialPortFinder {
                 mDevices = new Vector<>();
                 File dev = new File("/dev");
                 File[] files = dev.listFiles();
-                for (int i = 0; i < Objects.requireNonNull(files).length; i++) {
-                    if (files[i].getAbsolutePath().startsWith(mDeviceRoot)) {
-                        Log.d(TAG, "Found new device: " + files[i]);
-                        mDevices.add(files[i]);
+                if (files != null) {
+                    for (File file : files) {
+                        if (file.getAbsolutePath().startsWith(mDeviceRoot)) {
+                            Log.d(TAG, "Found new device: " + file);
+                            mDevices.add(file);
+                        }
                     }
                 }
             }

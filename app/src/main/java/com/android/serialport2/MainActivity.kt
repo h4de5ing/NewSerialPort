@@ -5,6 +5,7 @@ import android.text.TextUtils
 import android_serialport_api.SerialPortFinder
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -43,7 +44,6 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.serialport2.ui.MainViewModel
 import com.android.serialport2.ui.MySpinner
@@ -96,31 +96,36 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun HomeContent(mainView: MainViewModel = viewModel()) {
     var log by remember { mutableStateOf("") }
+    var rx by remember { mutableStateOf(0) }
+    var tx by remember { mutableStateOf(0) }
     fun log(message: String) {
-        log = "${log}${message}\n"
+        if (!TextUtils.isEmpty(message))
+            log = "${log}${message}\n"
     }
-    LaunchedEffect(mainView.serialData) { mainView.serialData.collect { log(String(it)) } }
+    LaunchedEffect(mainView.serialData) {
+        mainView.serialData.collect {
+            rx += it.size
+            log(String(it))
+        }
+    }
     val context = LocalContext.current
-    val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
     var devices by remember { mutableStateOf(emptyList<String>()) }
-
     var isStill by remember { mutableStateOf(false) }
     var isHex by remember { mutableStateOf(false) }
     var isVan by remember { mutableStateOf(false) }
     val delayTime = remember { mutableStateOf("200") }
     val inputValue = remember { mutableStateOf("1B31") }
-    var dev by remember { mutableStateOf("") }
+    var dev by remember { mutableStateOf("/dev/ttyUSB0") }
     var baud by remember { mutableStateOf("115200") }
     var display by remember { mutableStateOf("Hex") }
     val baudList = stringArrayResource(id = R.array.baud)
     val displayList = stringArrayResource(id = R.array.display)
     var isOpen by remember { mutableStateOf(false) }
-    var tx by remember { mutableStateOf(mainView.tx)}
-    var rx by remember { mutableStateOf(mainView.rx)}
 
     SideEffect {
         scope.launch {
@@ -154,8 +159,9 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
                             width = 1.dp, color = Color.Black, shape = RoundedCornerShape(1.dp)
                         )
                         .padding(5.dp)
+                        .verticalScroll(rememberScrollState())
                 ) {
-                    Text(text = log, fontSize = 14.sp)
+                    Text(text = log, modifier = Modifier.fillMaxSize())
                 }
                 Column(
                     modifier = Modifier
@@ -164,7 +170,7 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
                         )
                         .fillMaxHeight()
                         .padding(5.dp)
-                        .verticalScroll(scrollState)
+                        .verticalScroll(rememberScrollState())
                 ) {
                     Text(text = "串口节点")
                     MySpinner(items = devices, selectedItem = dev, onItemSelected = {
@@ -182,19 +188,20 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
                             display = it
                         })
                     Column {
-                        Text(text = "Tx:${tx.value}")
-                        Text(text = "Rx:${rx.value}")
+                        Text(text = "Tx:${tx}")
+                        Text(text = "Rx:${rx}")
                     }
                     Button(onClick = {
                         log = ""
-                        mainView.resetCounter()
+                        tx = 0
+                        rx = 0
                     }, shape = RoundedCornerShape(0.dp)) {
                         Text(text = "清除")
                     }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(text = if (isVan) "Van" else "Google")
-                        Checkbox(checked = isVan, onCheckedChange = { isVan = !isVan })
-                    }
+//                    Row(verticalAlignment = Alignment.CenterVertically) {
+//                        Text(text = if (isVan) "Van" else "Google")
+//                        Checkbox(checked = isVan, onCheckedChange = { isVan = !isVan })
+//                    }
                     Button(onClick = {
                         if (!isOpen) {
                             try {
@@ -240,7 +247,11 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
                 )
             }
             Button(
-                onClick = { mainView.write(inputValue.value.toByteArray()) },
+                onClick = {
+                    val data = inputValue.value.toByteArray()
+                    tx += data.size
+                    mainView.write(data)
+                },
                 shape = RoundedCornerShape(0.dp),
                 modifier = Modifier.padding(start = 10.dp, end = 10.dp)
             ) { Text(text = "发送") }
