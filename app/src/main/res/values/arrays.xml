@@ -27,13 +27,9 @@
         <item>ASCII</item>
         <item>HEX(fast)</item>
         <item>ASCII(fast)</item>
+        <item>Hex(Enter)</item>
         <item>ASCII(Enter)</item>
-    </string-array>
-    <string-array name="soc_which_module">
-        <item>GPS/Beidou</item>
-        <item>barcode</item>
-        <item>IDCard</item>
-        <item>Fingerprint</item>
+        <item>Empty</item>
     </string-array>
     <string-array name="node_index">
         <item>/dev/ttyUSB0</item>

@@ -1,4 +1,4 @@
-package com.android.serialport2;
+package com.android.serialport2.other;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -68,7 +68,7 @@ public class CrashHandler implements Thread.UncaughtExceptionHandler {
         }
         new Thread(() -> {
             Looper.prepare();
-            Toast.makeText(mContext, "很抱歉," + mContext.getPackageName() + "程序出现异常,正在收集日志，即将退出", Toast.LENGTH_SHORT).show();
+            Toast.makeText(mContext, mContext.getPackageName() + "crashed", Toast.LENGTH_SHORT).show();
             Looper.loop();
         }).start();
         collectDeviceInfo(mContext);

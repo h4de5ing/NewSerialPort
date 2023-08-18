@@ -1,6 +1,5 @@
-package com.android.serialport2
+package com.android.serialport2.ui
 
-import com.android.serialport2.ui.SerialPortBase
 import com.van.uart.LastError
 import com.van.uart.UartManager
 import kotlin.concurrent.thread

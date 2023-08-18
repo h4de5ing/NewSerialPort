@@ -1,4 +1,4 @@
-package com.android.serialport2
+package com.android.serialport2.other
 
 import android.app.Application
 import android.content.SharedPreferences

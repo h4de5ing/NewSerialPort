@@ -44,6 +44,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.android.serialport2.other.App
+import com.android.serialport2.other.toHexByteArray
+import com.android.serialport2.other.toHexString
 import com.android.serialport2.ui.MainViewModel
 import com.android.serialport2.ui.MySpinner
 import com.android.serialport2.ui.theme.NewSerialPortTheme
@@ -53,36 +56,8 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 class MainActivity : ComponentActivity() {
-    /**
-     * 将源数组追加到目标数组
-     *
-     * @param byte1 Sou1原数组1
-     * @param byte2 Sou2原数组2
-     * @param size   长度
-     * @return  返回一个新的数组，包括了原数组1和原数组2
-     */
-    private fun arrayAppend(byte1: ByteArray?, byte2: ByteArray?, size: Int): ByteArray? {
-        return if (byte1 == null && byte2 == null) {
-            null
-        } else if (byte1 == null) {
-            val byte3 = ByteArray(size)
-            System.arraycopy(byte2, 0, byte3, 0, size)
-            byte3
-        } else if (byte2 == null) {
-            val byte3 = ByteArray(byte1.size)
-            System.arraycopy(byte1, 0, byte3, 0, byte1.size)
-            byte3
-        } else {
-            val byte3 = ByteArray(byte1.size + size)
-            System.arraycopy(byte1, 0, byte3, 0, byte1.size)
-            System.arraycopy(byte2, 0, byte3, byte1.size, size)
-            byte3
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        //TODO 默认值保存到sp里面，第一次加载上次保存
         setContent {
             NewSerialPortTheme {
                 Surface(
@@ -95,33 +70,43 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalStdlibApi::class)
 @Composable
 fun HomeContent(mainView: MainViewModel = viewModel()) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var log by remember { mutableStateOf("") }
     var rx by remember { mutableStateOf(0) }
     var tx by remember { mutableStateOf(0) }
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     var devices by remember { mutableStateOf(emptyList<String>()) }
     var isStill by remember { mutableStateOf(false) }
     var isHex by remember { mutableStateOf(false) }
     var isVan by remember { mutableStateOf(false) }
     val delayTime = remember { mutableStateOf("200") }
-    val inputValue = remember { mutableStateOf("1B31") }
+    val input = remember { mutableStateOf("1B31") }
     var dev by remember { mutableStateOf("") }
     var baud by remember { mutableStateOf("") }
-    var display by remember { mutableStateOf("Hex") }
+    var display by remember { mutableStateOf(0) }
     val baudList = stringArrayResource(id = R.array.baud)
     val displayList = stringArrayResource(id = R.array.display)
     var isOpen by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
     fun log(message: String) {
-        if (!TextUtils.isEmpty(message)) log = "${log}${message}\n"
+        if (!TextUtils.isEmpty(message)) log = "${log}${message}"
     }
     LaunchedEffect(mainView.serialData) {
         mainView.serialData.collect {
             rx += it.size
-            log(String(it))
+            val show = when (display) {
+                0, 2 -> it.toHexString().uppercase()
+                1, 3 -> String(it)
+                4 -> "${it.toHexString().uppercase()}\n"
+                5 -> "${String(it)}\n"
+                else -> ""
+            }
+
+            if ((display == 2 || display == 3) && rx >= 10000) log = ""
+            log(show)
             scrollState.scrollTo(scrollState.maxValue)
         }
     }
@@ -134,6 +119,7 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
                 )
                 App.sp.getString("dev", "")?.apply { if (!TextUtils.isEmpty(this)) dev = this }
                 App.sp.getString("baud", "")?.apply { if (!TextUtils.isEmpty(this)) baud = this }
+                display = App.sp.getInt("display", 0)
                 devices = newList.distinct().filter { File(it).exists() }.sorted()
                 runCatching {
                     if (TextUtils.isEmpty(dev)) dev = devices[0]
@@ -176,21 +162,24 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
                         .verticalScroll(rememberScrollState())
                 ) {
                     Text(text = "串口节点")
-                    MySpinner(items = devices, selectedItem = dev, onItemSelected = {
+                    MySpinner(items = devices, selectedItem = dev, onItemSelected = { it, _ ->
                         dev = it
                         App.sp.edit().putString("dev", it).apply()
                     })
                     Text(text = "波特率")
-                    MySpinner(items = baudList.toList(), selectedItem = baud, onItemSelected = {
-                        baud = it
-                        App.sp.edit().putString("baud", it).apply()
-                    })
-                    Text(text = "显示")
                     MySpinner(
-                        items = displayList.toList(),
-                        selectedItem = display,
-                        onItemSelected = {
-                            display = it
+                        items = baudList.toList(),
+                        selectedItem = baud,
+                        onItemSelected = { it, _ ->
+                            baud = it
+                            App.sp.edit().putString("baud", it).apply()
+                        })
+                    Text(text = "显示")
+                    MySpinner(items = displayList.toList(),
+                        selectedItem = displayList[display],
+                        onItemSelected = { _, position ->
+                            display = position
+                            App.sp.edit().putInt("display", position).apply()
                         })
                     Column {
                         Text(text = "Tx:${tx}")
@@ -239,21 +228,21 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
             Checkbox(checked = isStill, onCheckedChange = { isStill = !isStill })
             Text(text = "Hex")
             Checkbox(checked = isHex, onCheckedChange = { isHex = !isHex })
-            Column(Modifier.weight(1f)) {
-                BasicTextField(
-                    value = inputValue.value,
-                    onValueChange = { inputValue.value = it },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .border(
-                            width = 0.5.dp, color = Color.Black, shape = RoundedCornerShape(1.dp)
-                        )
-                        .padding(3.dp),
-                )
-            }
+            BasicTextField(
+                value = input.value,
+                onValueChange = { input.value = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(
+                        width = 0.5.dp, color = Color.Black, shape = RoundedCornerShape(1.dp)
+                    )
+                    .padding(3.dp)
+                    .weight(1f),
+            )
             Button(
                 onClick = {
-                    val data = inputValue.value.toByteArray()
+                    val data =
+                        if (isHex) input.value.toHexByteArray() else input.value.toByteArray()
                     tx += data.size
                     mainView.write(data)
                 },

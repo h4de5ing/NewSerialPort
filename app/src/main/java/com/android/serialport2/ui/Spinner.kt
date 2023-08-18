@@ -110,7 +110,7 @@ fun <T> Spinner2(
     dropDownModifier: Modifier = Modifier,
     items: List<T>,
     selectedItem: T,
-    onItemSelected: (T) -> Unit,
+    onItemSelected: (T,Int) -> Unit,
     selectedItemFactory: @Composable (Modifier, T) -> Unit,
     dropdownItemFactory: @Composable (T, Int) -> Unit,
 ) {
@@ -126,7 +126,7 @@ fun <T> Spinner2(
                 DropdownMenuItem(text = {
                     dropdownItemFactory(element, index)
                 }, onClick = {
-                    onItemSelected(items[index])
+                    onItemSelected(items[index],index)
                     expanded = false
                 })
             }
@@ -139,7 +139,7 @@ fun <T> Spinner2(
 fun MySpinner(
     items: List<String>,
     selectedItem: String,
-    onItemSelected: (String) -> Unit
+    onItemSelected: (String,Int) -> Unit
 ) {
     Spinner2(
         modifier = Modifier
