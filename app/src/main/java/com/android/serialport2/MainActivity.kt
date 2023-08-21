@@ -29,7 +29,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,6 +50,7 @@ import com.android.serialport2.ui.MainViewModel
 import com.android.serialport2.ui.MySpinner
 import com.android.serialport2.ui.theme.NewSerialPortTheme
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -70,7 +70,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalStdlibApi::class)
 @Composable
 fun HomeContent(mainView: MainViewModel = viewModel()) {
     val context = LocalContext.current
@@ -81,9 +80,9 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
     var devices by remember { mutableStateOf(emptyList<String>()) }
     var isStill by remember { mutableStateOf(false) }
     var isHex by remember { mutableStateOf(false) }
-    var isVan by remember { mutableStateOf(false) }
-    val delayTime = remember { mutableStateOf("200") }
-    val input = remember { mutableStateOf("1B31") }
+//    var isVan by remember { mutableStateOf(false) }
+    var delayTime by remember { mutableStateOf("200") }
+    var input by remember { mutableStateOf("1B31") }
     var dev by remember { mutableStateOf("") }
     var baud by remember { mutableStateOf("") }
     var display by remember { mutableStateOf(0) }
@@ -108,6 +107,18 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
             if ((display == 2 || display == 3) && rx >= 10000) log = ""
             log(show)
             scrollState.scrollTo(scrollState.maxValue)
+        }
+    }
+    LaunchedEffect(isHex) {
+        scope.launch(Dispatchers.IO) {
+            while (true) {
+                if (isStill/*&&isOpen*/) {
+                    val data = if (isHex) input.toHexByteArray() else input.toByteArray()
+                    tx += data.size
+                    mainView.write(data)
+                    delay(delayTime.toLong())
+                }
+            }
         }
     }
     SideEffect {
@@ -167,8 +178,7 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
                         App.sp.edit().putString("dev", it).apply()
                     })
                     Text(text = "波特率")
-                    MySpinner(
-                        items = baudList.toList(),
+                    MySpinner(items = baudList.toList(),
                         selectedItem = baud,
                         onItemSelected = { it, _ ->
                             baud = it
@@ -223,26 +233,15 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(text = "定时(ms)")
-            EditText(delayTime)
+            EditText(delayTime) { delayTime = it }
             Text(text = "Auto")
             Checkbox(checked = isStill, onCheckedChange = { isStill = !isStill })
             Text(text = "Hex")
             Checkbox(checked = isHex, onCheckedChange = { isHex = !isHex })
-            BasicTextField(
-                value = input.value,
-                onValueChange = { input.value = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(
-                        width = 0.5.dp, color = Color.Black, shape = RoundedCornerShape(1.dp)
-                    )
-                    .padding(3.dp)
-                    .weight(1f),
-            )
+            EditText(input, modifier = Modifier.weight(1f)) { input = it }
             Button(
                 onClick = {
-                    val data =
-                        if (isHex) input.value.toHexByteArray() else input.value.toByteArray()
+                    val data = if (isHex) input.toHexByteArray() else input.toByteArray()
                     tx += data.size
                     mainView.write(data)
                 },
@@ -254,11 +253,11 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
 }
 
 @Composable
-fun EditText(inputValue: MutableState<String>) {
+fun EditText(inputValue: String, modifier: Modifier = Modifier, onValueChange: ((String) -> Unit)) {
     BasicTextField(
-        value = inputValue.value,
-        onValueChange = { inputValue.value = it },
-        modifier = Modifier
+        value = inputValue,
+        onValueChange = onValueChange,
+        modifier = modifier
             .border(
                 width = 0.5.dp, color = Color.Black, shape = RoundedCornerShape(1.dp)
             )
