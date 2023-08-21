@@ -85,7 +85,7 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
     var input by remember { mutableStateOf("1B31") }
     var dev by remember { mutableStateOf("") }
     var baud by remember { mutableStateOf("") }
-    var display by remember { mutableStateOf(0) }
+    var display by remember { mutableStateOf(1) }
     val baudList = stringArrayResource(id = R.array.baud)
     val displayList = stringArrayResource(id = R.array.display)
     var isOpen by remember { mutableStateOf(false) }
@@ -211,6 +211,7 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
                             try {
                                 mainView.setupSerial(path = dev, baud.toInt())
                             } catch (e: Exception) {
+                                log("异常原因:${e.message}\n")
                                 e.printStackTrace()
                             }
                             isOpen = mainView.isOpen()
