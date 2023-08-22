@@ -23,7 +23,6 @@ class VanSerialPort(path: String, baudRate: Int, val onChange: (ByteArray) -> Un
                         if (size > 0) {
                             val data = ByteArray(size)
                             System.arraycopy(buffer, 0, data, 0, size)
-                            println("uartManager ${String(data)}")
                             onChange(data)
                         }
                     }

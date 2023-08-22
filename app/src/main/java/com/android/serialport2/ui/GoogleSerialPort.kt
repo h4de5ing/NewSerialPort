@@ -9,19 +9,25 @@ class GoogleSerialPort(path: String, baudRate: Int, val onChange: (ByteArray) ->
     private var serialPort: SerialPort? = null
 
     init {
-        serialPort = SerialPort(File(path), baudRate, 0)
-        thread {
-            while (true) {
-                val buffer = ByteArray(1024)
-                val size = serialPort?.inputStream?.read(buffer) ?: 0
-                if (size > 0) {
-                    val data = ByteArray(size)
-                    System.arraycopy(buffer, 0, data, 0, size)
-                    println("serial_port ${String(data)}")
-                    onChange(data)
+        val file = File(path)
+        if (file.exists()) {
+            serialPort = SerialPort(File(path), baudRate, 0)
+            thread {
+                while (true) {
+                    val buffer = ByteArray(1024)
+                    try {
+                        val size = serialPort?.inputStream?.read(buffer) ?: 0
+                        if (size > 0) {
+                            val data = ByteArray(size)
+                            System.arraycopy(buffer, 0, data, 0, size)
+                            onChange(data)
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
                 }
             }
-        }
+        } else onChange("$path 不存在".toByteArray())
     }
 
 

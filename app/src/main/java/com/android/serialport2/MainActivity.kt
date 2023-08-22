@@ -112,7 +112,7 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
     LaunchedEffect(isHex) {
         scope.launch(Dispatchers.IO) {
             while (true) {
-                if (isStill/*&&isOpen*/) {
+                if (isStill && isOpen) {
                     val data = if (isHex) input.hexToByteArray() else input.toByteArray()
                     tx += data.size
                     mainView.write(data)
@@ -168,7 +168,8 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
                         App.sp.edit().putString("dev", it).apply()
                     })
                     Text(text = "波特率")
-                    MySpinner(items = baudList.toList(),
+                    MySpinner(
+                        items = baudList.toList(),
                         selectedItem = baud,
                         onItemSelected = { it, _ ->
                             baud = it
@@ -201,11 +202,9 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
                             try {
                                 mainView.setupSerial(path = dev, baud.toInt())
                             } catch (e: Exception) {
-                                log("异常原因:${e.message}\n")
+                                log("串口打开异常原因:${e.message}\n")
                                 e.printStackTrace()
                             }
-                            isOpen = mainView.isOpen()
-                            log(if (isOpen) "打开成功" else "打开失败")
                         } else mainView.close()
                         isOpen = mainView.isOpen()
                     }, shape = RoundedCornerShape(0.dp)) {
@@ -240,7 +239,8 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
                     mainView.write(data)
                 },
                 shape = RoundedCornerShape(0.dp),
-                modifier = Modifier.padding(start = 10.dp, end = 10.dp)
+                modifier = Modifier.padding(start = 10.dp, end = 10.dp),
+                enabled = isOpen
             ) { Text(text = "发送") }
         }
     }
