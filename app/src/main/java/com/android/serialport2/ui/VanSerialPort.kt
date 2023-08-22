@@ -39,10 +39,18 @@ class VanSerialPort(path: String, baudRate: Int, val onChange: (ByteArray) -> Un
     }
 
     override fun write(data: ByteArray) {
-        uartManager?.write(data, data.size)
+        try {
+            uartManager?.write(data, data.size)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     override fun close() {
-        uartManager?.close()
+        try {
+            uartManager?.close()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }

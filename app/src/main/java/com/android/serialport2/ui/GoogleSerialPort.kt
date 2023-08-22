@@ -28,10 +28,18 @@ class GoogleSerialPort(path: String, baudRate: Int, val onChange: (ByteArray) ->
     override fun isOpen(): Boolean = serialPort?.isOpen ?: false
 
     override fun write(data: ByteArray) {
-        serialPort?.outputStream?.write(data)
+        try {
+            serialPort?.outputStream?.write(data)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     override fun close() {
-        serialPort?.close2()
+        try {
+            serialPort?.close2()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }
