@@ -34,6 +34,9 @@
     <string-array name="node_index">
         <item>/dev/ttyUSB0</item>
         <item>/dev/ttyUSB1</item>
+        <item>/dev/ttyUSB2</item>
+        <item>/dev/ttyUSB3</item>
+        <item>/dev/ttyUSB4</item>
         <item>/dev/ttyUW1</item>
         <item>/dev/ttyUW2</item>
         <item>/dev/ttySWK3</item>

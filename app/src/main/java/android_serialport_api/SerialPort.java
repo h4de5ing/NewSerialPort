@@ -35,7 +35,7 @@ public class SerialPort {
     private FileInputStream mFileInputStream;
     private FileOutputStream mFileOutputStream;
 
-    public SerialPort(File device, int baudRate,  int flags) throws SecurityException, IOException {
+    public SerialPort(File device, int baudRate, int flags) throws SecurityException, IOException {
         mFd = open(device.getAbsolutePath(), baudRate, flags);
         if (mFd == null) {
             Log.e("serial_port", device.getAbsolutePath() + " 串口打开异常");
@@ -64,19 +64,8 @@ public class SerialPort {
         return mFileOutputStream;
     }
 
-    /**
-     * 打开串口
-     *
-     * @param path     串口设备文件
-     * @param baudRate 波特率
-     * @param parity   奇偶校验，0 None（默认）； 1 Odd； 2 Even
-     * @param dataBits 数据位，5 ~ 8  （默认8）
-     * @param stopBit  停止位，1 或 2  （默认 1）
-     * @param flags    标记 0（默认）
-     */
-//    private native static FileDescriptor open(String path, int baudRate, int parity, int dataBits, int stopBit, int flags);
-
     private native static FileDescriptor open(String path, int baudRate, int flags);
+
     private native void close();
 
     static {

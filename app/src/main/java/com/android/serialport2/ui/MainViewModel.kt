@@ -13,10 +13,6 @@ class MainViewModel : ViewModel() {
     private var uartManager: UartManager? = null
     private val _serialData = MutableStateFlow(ByteArray(0))
     val serialData = _serialData.asStateFlow()
-    fun updateData(data: ByteArray) {
-        _serialData.value = data
-    }
-
     fun setupSerial(path: String, baudRate: Int) {
         uartManager = UartManager()
         try {

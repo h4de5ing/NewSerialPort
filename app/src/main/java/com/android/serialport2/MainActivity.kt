@@ -44,7 +44,7 @@ import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.serialport2.other.App
-import com.android.serialport2.other.toHexByteArray
+import com.android.serialport2.other.hexToByteArray
 import com.android.serialport2.other.toHexString
 import com.android.serialport2.ui.MainViewModel
 import com.android.serialport2.ui.MySpinner
@@ -113,7 +113,7 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
         scope.launch(Dispatchers.IO) {
             while (true) {
                 if (isStill/*&&isOpen*/) {
-                    val data = if (isHex) input.toHexByteArray() else input.toByteArray()
+                    val data = if (isHex) input.hexToByteArray() else input.toByteArray()
                     tx += data.size
                     mainView.write(data)
                     delay(delayTime.toLong())
@@ -125,16 +125,14 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
         scope.launch {
             withContext(Dispatchers.IO) {
                 val newList = SerialPortFinder().allDevs
-                newList.addAll(
-                    context.resources.getStringArray(R.array.node_index).toList()
-                )
+                newList.addAll(context.resources.getStringArray(R.array.node_index).toList())
                 App.sp.getString("dev", "")?.apply { if (!TextUtils.isEmpty(this)) dev = this }
                 App.sp.getString("baud", "")?.apply { if (!TextUtils.isEmpty(this)) baud = this }
-                display = App.sp.getInt("display", 0)
+                display = App.sp.getInt("display", 1)
                 devices = newList.distinct().filter { File(it).exists() }.sorted()
                 runCatching {
                     if (TextUtils.isEmpty(dev)) dev = devices[0]
-                    if (TextUtils.isEmpty(baud)) baud = baudList[0]
+                    if (TextUtils.isEmpty(baud)) baud = baudList[display]
                 }
             }
         }
@@ -142,22 +140,16 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
     Column {
         Box(
             modifier = Modifier
-                .height(
-                    (LocalConfiguration.current.screenHeightDp * 0.9f).dp
-                )
+                .height((LocalConfiguration.current.screenHeightDp * 0.9f).dp)
                 .fillMaxWidth()
                 .background(Color.LightGray)
         ) {
             Row {
                 Box(
                     modifier = Modifier
-                        .width(
-                            (LocalConfiguration.current.screenWidthDp * 0.85f).dp
-                        )
+                        .width((LocalConfiguration.current.screenWidthDp * 0.85f).dp)
                         .fillMaxHeight()
-                        .border(
-                            width = 1.dp, color = Color.Black, shape = RoundedCornerShape(1.dp)
-                        )
+                        .border(width = 1.dp, color = Color.Black, shape = RoundedCornerShape(1.dp))
                         .padding(5.dp)
                         .verticalScroll(scrollState)
                 ) {
@@ -165,9 +157,7 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
                 }
                 Column(
                     modifier = Modifier
-                        .width(
-                            (LocalConfiguration.current.screenWidthDp * 0.15f).dp
-                        )
+                        .width((LocalConfiguration.current.screenWidthDp * 0.15f).dp)
                         .fillMaxHeight()
                         .padding(5.dp)
                         .verticalScroll(rememberScrollState())
@@ -216,9 +206,8 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
                             }
                             isOpen = mainView.isOpen()
                             log(if (isOpen) "打开成功" else "打开失败")
-                        } else {
-                            mainView.close()
-                        }
+                        } else mainView.close()
+                        isOpen = mainView.isOpen()
                     }, shape = RoundedCornerShape(0.dp)) {
                         Text(text = if (isOpen) "关闭" else "打开")
                     }
@@ -239,10 +228,14 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
             Checkbox(checked = isStill, onCheckedChange = { isStill = !isStill })
             Text(text = "Hex")
             Checkbox(checked = isHex, onCheckedChange = { isHex = !isHex })
-            EditText(input, modifier = Modifier.weight(1f)) { input = it }
+            EditText(input, modifier = Modifier.weight(1f)) {
+                if (isHex) {
+                    if ("\\A[0-9a-fA-F]+\\z".toRegex().matches(it)) input = it
+                } else input = it
+            }
             Button(
                 onClick = {
-                    val data = if (isHex) input.toHexByteArray() else input.toByteArray()
+                    val data = if (isHex) input.hexToByteArray() else input.toByteArray()
                     tx += data.size
                     mainView.write(data)
                 },
