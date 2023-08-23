@@ -2,6 +2,8 @@ package com.android.serialport2.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.serialport2.other.GoogleSerialPort
+import com.android.serialport2.other.SerialPortBase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch

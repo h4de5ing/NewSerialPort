@@ -1,4 +1,4 @@
-package com.android.serialport2.ui
+package com.android.serialport2.other
 
 import com.van.uart.LastError
 import com.van.uart.UartManager

@@ -1,4 +1,4 @@
-package com.android.serialport2.ui
+package com.android.serialport2.other
 
 import android_serialport_api.SerialPort
 import java.io.File

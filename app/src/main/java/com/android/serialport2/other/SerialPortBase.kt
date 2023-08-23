@@ -1,4 +1,4 @@
-package com.android.serialport2.ui
+package com.android.serialport2.other
 
 interface SerialPortBase {
     fun isOpen():Boolean
