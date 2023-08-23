@@ -12,7 +12,7 @@ fun info(): String =
             "运行环境:${BuildConfig.FLAVOR}\n" +
             "编译类型:${BuildConfig.BUILD_TYPE}\n" +
             "APK构建时间:${BuildConfig.BUILD_TIME.date()}\n" +
-            "编译Hash:${BuildConfig.GIT_SHA}"
+            "编译Hash:${BuildConfig.GIT_SHA}\n"
 
 /**
  * 数组拼接

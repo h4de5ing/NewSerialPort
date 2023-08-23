@@ -2,6 +2,7 @@ plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
 }
+
 static def gitSha() {
     try {
         return 'git rev-parse --short HEAD'.execute().text.trim()
@@ -9,6 +10,7 @@ static def gitSha() {
         return 'unknown'
     }
 }
+
 android {
     namespace 'com.android.serialport2'
     compileSdk 34
@@ -111,7 +113,6 @@ android {
             }
         }
     }
-    buildFeatures { buildConfig true }
 }
 
 dependencies {
@@ -123,6 +124,8 @@ dependencies {
     implementation 'androidx.compose.ui:ui-graphics'
     implementation 'androidx.compose.ui:ui-tooling-preview'
     implementation 'androidx.compose.material3:material3'
+    implementation "androidx.compose.material3:material3-window-size-class"
     implementation 'androidx.lifecycle:lifecycle-viewmodel-compose'
     implementation 'androidx.compose.runtime:runtime-livedata'
+    implementation "com.google.accompanist:accompanist-adaptive:0.26.2-beta"
 }

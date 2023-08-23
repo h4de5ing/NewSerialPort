@@ -25,9 +25,18 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.PermanentNavigationDrawer
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
+import androidx.compose.material3.windowsizeclass.WindowSizeClass
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
+import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -40,6 +49,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringArrayResource
@@ -49,6 +59,7 @@ import com.android.serialport2.other.App
 import com.android.serialport2.other.hexToByteArray
 import com.android.serialport2.other.info
 import com.android.serialport2.other.toHexString
+import com.android.serialport2.ui.ControllerView
 import com.android.serialport2.ui.MainViewModel
 import com.android.serialport2.ui.MySpinner
 import com.android.serialport2.ui.theme.NewSerialPortTheme
@@ -59,6 +70,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 class MainActivity : ComponentActivity() {
+    @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -66,9 +78,95 @@ class MainActivity : ComponentActivity() {
                 Surface(
                     modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
                 ) {
-                    HomeContent()
+                    HomeWindow(calculateWindowSizeClass(this))
+//                    HomeContent()
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun HomeWindow(windowSizeClass: WindowSizeClass) {
+    NavigationDrawer(windowSizeClass) { NavContent() }
+}
+
+@Composable
+fun NavigationDrawer(
+    windowSizeClass: WindowSizeClass, content: @Composable () -> Unit
+) {
+    val windowWidthSizeClass = windowSizeClass.widthSizeClass
+    if (windowWidthSizeClass == WindowWidthSizeClass.Compact) {
+        val drawerState = rememberDrawerState(DrawerValue.Closed)
+        ModalNavigationDrawer(
+            drawerState = drawerState,
+            drawerContent = { DrawerContent() }) { content() }
+    } else {
+        PermanentNavigationDrawer(drawerContent = {
+            DrawerContent()
+        }) { content() }
+    }
+}
+
+@Composable
+fun DrawerContent() {
+    ModalDrawerSheet(drawerShape = RectangleShape, modifier = Modifier.width(180.dp)) {
+        ControllerView()
+    }
+}
+
+@Composable
+fun NavContent() {
+    val scrollState = rememberScrollState()
+    var log by remember { mutableStateOf("") }
+    var rx by remember { mutableIntStateOf(0) }
+    var tx by remember { mutableIntStateOf(0) }
+    var isStill by remember { mutableStateOf(false) }
+    var isHex by remember { mutableStateOf(false) }
+    var delayTime by remember { mutableStateOf("200") }
+    var input by remember { mutableStateOf("1B31") }
+    var isOpen by remember { mutableStateOf(false) }
+    fun log(message: String) {
+        if (!TextUtils.isEmpty(message)) log = "${log}${message}"
+    }
+    log("${info()}${info()}${info()}${info()}${info()}${info()}${info()}")
+    Column(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(width = 1.dp, color = Color.Black, shape = RoundedCornerShape(1.dp))
+                .padding(3.dp)
+                .weight(1f)
+        ) {
+            Text(
+                text = log, modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+            )
+        }
+        Row(
+            modifier = Modifier
+                .wrapContentHeight()
+                .padding(3.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            EditText(
+                input, modifier = Modifier
+                    .weight(1f)
+                    .wrapContentHeight()
+            ) {
+                if (isHex) {
+                    if ("\\A[0-9a-fA-F]+\\z".toRegex().matches(it)) input = it
+                } else input = it
+            }
+            Button(
+                onClick = {
+                    val data = if (isHex) input.hexToByteArray() else input.toByteArray()
+                    tx += data.size
+//                mainView.write(data)
+                }, shape = RoundedCornerShape(0.dp), enabled = isOpen
+            ) { Text(text = "发送") }
         }
     }
 }
@@ -171,8 +269,7 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
                         App.sp.edit().putString("dev", it).apply()
                     })
                     Text(text = "波特率")
-                    MySpinner(
-                        items = baudList.toList(),
+                    MySpinner(items = baudList.toList(),
                         selectedItem = baud,
                         onItemSelected = { it, _ ->
                             baud = it
