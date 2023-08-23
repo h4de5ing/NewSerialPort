@@ -7,6 +7,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -45,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.serialport2.other.App
 import com.android.serialport2.other.hexToByteArray
+import com.android.serialport2.other.info
 import com.android.serialport2.other.toHexString
 import com.android.serialport2.ui.MainViewModel
 import com.android.serialport2.ui.MySpinner
@@ -75,17 +78,17 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var log by remember { mutableStateOf("") }
-    var rx by remember { mutableStateOf(0) }
-    var tx by remember { mutableStateOf(0) }
+    var rx by remember { mutableIntStateOf(0) }
+    var tx by remember { mutableIntStateOf(0) }
     var devices by remember { mutableStateOf(emptyList<String>()) }
     var isStill by remember { mutableStateOf(false) }
     var isHex by remember { mutableStateOf(false) }
-//    var isVan by remember { mutableStateOf(false) }
+    var isVan by remember { mutableStateOf(false) }
     var delayTime by remember { mutableStateOf("200") }
     var input by remember { mutableStateOf("1B31") }
     var dev by remember { mutableStateOf("") }
-    var baud by remember { mutableStateOf("") }
-    var display by remember { mutableStateOf(1) }
+    var baud by remember { mutableStateOf("115200") }
+    var display by remember { mutableIntStateOf(1) }
     val baudList = stringArrayResource(id = R.array.baud)
     val displayList = stringArrayResource(id = R.array.display)
     var isOpen by remember { mutableStateOf(false) }
@@ -162,7 +165,7 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
                         .padding(5.dp)
                         .verticalScroll(rememberScrollState())
                 ) {
-                    Text(text = "串口节点")
+                    Text(text = "串口节点", modifier = Modifier.clickable { log(info()) })
                     MySpinner(items = devices, selectedItem = dev, onItemSelected = { it, _ ->
                         dev = it
                         App.sp.edit().putString("dev", it).apply()
@@ -182,6 +185,10 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
                             display = position
                             App.sp.edit().putInt("display", position).apply()
                         })
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = isVan, onCheckedChange = { isVan = !isVan })
+                        Text(text = if (isVan) "Van" else "Google")
+                    }
                     Column {
                         Text(text = "Tx:${tx}")
                         Text(text = "Rx:${rx}")
@@ -190,13 +197,7 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
                         log = ""
                         tx = 0
                         rx = 0
-                    }, shape = RoundedCornerShape(0.dp)) {
-                        Text(text = "清除")
-                    }
-//                    Row(verticalAlignment = Alignment.CenterVertically) {
-//                        Text(text = if (isVan) "Van" else "Google")
-//                        Checkbox(checked = isVan, onCheckedChange = { isVan = !isVan })
-//                    }
+                    }, shape = RoundedCornerShape(0.dp)) { Text(text = "清除") }
                     Button(onClick = {
                         if (!isOpen) {
                             try {
@@ -222,7 +223,9 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(text = "定时(ms)")
-            EditText(delayTime) { delayTime = it }
+            EditText(delayTime, modifier = Modifier.width(50.dp)) {
+                if ("^[0-9]{1,4}\$".toRegex().matches(it)) delayTime = it
+            }
             Text(text = "Auto")
             Checkbox(checked = isStill, onCheckedChange = { isStill = !isStill })
             Text(text = "Hex")
@@ -237,10 +240,7 @@ fun HomeContent(mainView: MainViewModel = viewModel()) {
                     val data = if (isHex) input.hexToByteArray() else input.toByteArray()
                     tx += data.size
                     mainView.write(data)
-                },
-                shape = RoundedCornerShape(0.dp),
-                modifier = Modifier.padding(start = 10.dp, end = 10.dp),
-                enabled = isOpen
+                }, shape = RoundedCornerShape(0.dp), enabled = isOpen
             ) { Text(text = "发送") }
         }
     }

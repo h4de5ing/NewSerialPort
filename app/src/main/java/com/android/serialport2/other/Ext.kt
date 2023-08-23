@@ -1,10 +1,24 @@
 package com.android.serialport2.other
 
+import com.android.serialport2.BuildConfig
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+fun Long.date(): String = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.CHINA).format(Date(this))
+fun info(): String =
+    "包名:${BuildConfig.APPLICATION_ID}\n" +
+            "版本号:v${BuildConfig.VERSION_NAME}\n" +
+            "运行环境:${BuildConfig.FLAVOR}\n" +
+            "编译类型:${BuildConfig.BUILD_TYPE}\n" +
+            "APK构建时间:${BuildConfig.BUILD_TIME.date()}\n" +
+            "编译Hash:${BuildConfig.GIT_SHA}"
+
 /**
  * 数组拼接
  * @return {0x01}+{0x02,0x03}={0x01,0x02,0x03}
  */
-fun ByteArray.add(data: ByteArray): ByteArray = this+data
+fun ByteArray.add(data: ByteArray): ByteArray = this + data
 
 /**
  * 字符串转数组

@@ -2,7 +2,13 @@ plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
 }
-
+static def gitSha() {
+    try {
+        return 'git rev-parse --short HEAD'.execute().text.trim()
+    } catch (Exception ignored) {
+        return 'unknown'
+    }
+}
 android {
     namespace 'com.android.serialport2'
     compileSdk 34
@@ -11,13 +17,16 @@ android {
         applicationId "com.android.serialport2"
         minSdk 24
         targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        versionCode 100
+        versionName "1.0.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary true
         }
+        flavorDimensions = ["default"]
+        buildConfigField "long", "BUILD_TIME", System.currentTimeMillis() + "L"
+        buildConfigField "String", "GIT_SHA", "\"${gitSha()}\""
         //noinspection ChromeOsAbiSupport
         ndk { abiFilters 'armeabi' }
     }
@@ -35,10 +44,9 @@ android {
             keyPassword('android')
         }
     }
-    flavorDimensions = ["default"]
+
     productFlavors {
         nromal {
-            buildConfigField "String", "MODULE_NAME", "\"normal\""
             applicationId = 'com.android.serialport2'
             manifestPlaceholders = [sharedUserId    : "com.android.serialport2",
                                     applicationLabel: "SerialPort",
@@ -46,7 +54,6 @@ android {
             signingConfig signingConfigs.normal
         }
         system {
-            buildConfigField "String", "MODULE_NAME", "\"system\""
             applicationId = 'com.android.serialport2.system'
             manifestPlaceholders = [sharedUserId    : "android.uid.system",
                                     applicationLabel: "SystemSerialPort",
@@ -58,6 +65,7 @@ android {
         debug {
             minifyEnabled false
             signingConfig signingConfigs.normal
+//            signingConfig signingConfigs.system
         }
         release {
             minifyEnabled false
@@ -86,6 +94,24 @@ android {
             jniLibs.srcDirs = ['src/main/jniLibs']
         }
     }
+    applicationVariants.configureEach { variant ->
+        def buildType = variant.buildType.name
+        def prefix = "android_serialport"
+        def createTime = new Date().format("yyyyMMddHHmmss")
+        if (buildType == "release") {
+            variant.outputs.each {
+                def fromFile = it.outputFile
+                def intoFile = "D:/test/${prefix}/v${android.defaultConfig.versionName}/"
+                copy {
+                    from fromFile
+                    into intoFile
+                    include('*.apk')
+                    rename('app-', "${prefix}_v${android.defaultConfig.versionName}_${createTime}_${gitSha()}_")
+                }
+            }
+        }
+    }
+    buildFeatures { buildConfig true }
 }
 
 dependencies {
