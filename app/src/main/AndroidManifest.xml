@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:sharedUserId="android.uid.system">
+    android:sharedUserId="${sharedUserId}">
 
     <application
         android:name=".other.App"
         android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name"
+        android:icon="${applicationIcon}"
+        android:label="${applicationLabel}"
         android:supportsRtl="true"
         android:theme="@style/Theme.NewSerialPort"
         tools:targetApi="31">

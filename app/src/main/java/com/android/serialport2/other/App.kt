@@ -10,7 +10,7 @@ class App : Application() {
     }
     override fun onCreate() {
         super.onCreate()
-        CrashHandler.getInstance().init(this)
+        CrashHandler.instance.init(this)
         sp = PreferenceManager.getDefaultSharedPreferences(this)
     }
 }
