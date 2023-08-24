@@ -40,6 +40,7 @@ import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -59,6 +60,8 @@ import com.android.serialport2.other.App
 import com.android.serialport2.other.hexToByteArray
 import com.android.serialport2.other.info
 import com.android.serialport2.other.toHexString
+import com.android.serialport2.ui.Config
+import com.android.serialport2.ui.ConfigViewModel
 import com.android.serialport2.ui.ControllerView
 import com.android.serialport2.ui.MainViewModel
 import com.android.serialport2.ui.MySpinner
@@ -116,20 +119,47 @@ fun DrawerContent() {
 }
 
 @Composable
-fun NavContent() {
+fun NavContent(mainView: MainViewModel = viewModel(), configView: ConfigViewModel = viewModel()) {
+    val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
-    var log by remember { mutableStateOf("") }
-    var rx by remember { mutableIntStateOf(0) }
-    var tx by remember { mutableIntStateOf(0) }
-    var isStill by remember { mutableStateOf(false) }
-    var isHex by remember { mutableStateOf(false) }
-    var delayTime by remember { mutableStateOf("200") }
+    val config by configView.uiState.collectAsState(initial = Config())
     var input by remember { mutableStateOf("1B31") }
-    var isOpen by remember { mutableStateOf(false) }
     fun log(message: String) {
-        if (!TextUtils.isEmpty(message)) log = "${log}${message}"
+        if (!TextUtils.isEmpty(message)) {
+            val log = config.log
+            configView.update(log = "${log}${message}")
+        }
     }
-    log("${info()}${info()}${info()}${info()}${info()}${info()}${info()}")
+    LaunchedEffect(config.isAuto) {
+        scope.launch(Dispatchers.IO) {
+            while (true) {
+                if (config.isAuto && config.isOpen) {
+                    val data = if (config.isHex) input.hexToByteArray() else input.toByteArray()
+                    configView.update(tx = config.tx + data.size)
+                    mainView.write(data)
+                    //log(if (config.isHex) data.toHexString() else input)
+                    delay(config.delayTime.toLong())
+                }
+            }
+        }
+    }
+    LaunchedEffect(mainView.serialData) {
+        mainView.serialData.collect {
+            val show = when (config.display) {
+                0, 2 -> it.toHexString().uppercase()
+                1, 3 -> String(it)
+                4 -> "${it.toHexString().uppercase()}\n"
+                5 -> "${String(it)}\n"
+                else -> ""
+            }
+            log(show)
+            if ((config.display == 2 || config.display == 3) && config.rx >= 10000) {
+                configView.update(log = "")
+            }
+            configView.update(rx = config.rx + it.size)
+            scrollState.scrollTo(scrollState.maxValue)
+        }
+    }
     Column(modifier = Modifier.fillMaxSize()) {
         Box(
             modifier = Modifier
@@ -139,7 +169,7 @@ fun NavContent() {
                 .weight(1f)
         ) {
             Text(
-                text = log, modifier = Modifier
+                text = config.log, modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(scrollState)
             )
@@ -156,16 +186,17 @@ fun NavContent() {
                     .weight(1f)
                     .wrapContentHeight()
             ) {
-                if (isHex) {
+                if (config.isHex) {
                     if ("\\A[0-9a-fA-F]+\\z".toRegex().matches(it)) input = it
                 } else input = it
             }
             Button(
                 onClick = {
-                    val data = if (isHex) input.hexToByteArray() else input.toByteArray()
-                    tx += data.size
-//                mainView.write(data)
-                }, shape = RoundedCornerShape(0.dp), enabled = isOpen
+                    val data = if (config.isHex) input.hexToByteArray() else input.toByteArray()
+                    configView.update(tx = config.tx + data.size)
+                    mainView.write(data)
+                    //log(input)
+                }, shape = RoundedCornerShape(0.dp), enabled = config.isOpen
             ) { Text(text = "发送") }
         }
     }
