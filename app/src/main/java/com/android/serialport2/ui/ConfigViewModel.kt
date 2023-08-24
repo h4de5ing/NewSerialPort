@@ -20,7 +20,8 @@ class ConfigViewModel : ViewModel() {
         isOpen: Boolean = _uiState.value.isOpen,
         tx: Long = _uiState.value.tx,
         rx: Long = _uiState.value.rx,
-        log: String = _uiState.value.log
+        log: String = _uiState.value.log,
+        input: String = _uiState.value.input
     ) {
         _uiState.value = _uiState.value.copy(
             devices = devices,
@@ -35,6 +36,7 @@ class ConfigViewModel : ViewModel() {
             tx = tx,
             rx = rx,
             log = log,
+            input = input,
         )
     }
 }
@@ -48,6 +50,7 @@ data class Config(
     val display: Int = 1,
     val tx: Long = 0,
     val rx: Long = 0,
+    val input: String = "",
     val dev: String = "",
     val baud: String = "115200",
     val log: String = "",

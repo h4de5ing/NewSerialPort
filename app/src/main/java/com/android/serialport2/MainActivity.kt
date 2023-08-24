@@ -34,16 +34,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.android.serialport2.other.App
 import com.android.serialport2.other.hexToByteArray
 import com.android.serialport2.other.toHexString
 import com.android.serialport2.ui.Config
@@ -78,7 +76,8 @@ fun NavigationDrawer(
     val windowWidthSizeClass = windowSizeClass.widthSizeClass
     if (windowWidthSizeClass == WindowWidthSizeClass.Compact) {
         val drawerState = rememberDrawerState(DrawerValue.Closed)
-        ModalNavigationDrawer(drawerState = drawerState,
+        ModalNavigationDrawer(
+            drawerState = drawerState,
             drawerContent = { DrawerContent() }) { content() }
     } else {
         PermanentNavigationDrawer(drawerContent = { DrawerContent() }) { content() }
@@ -97,20 +96,19 @@ fun NavContent(mainView: MainViewModel = viewModel(), configView: ConfigViewMode
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
     val config by configView.uiState.collectAsState(initial = Config())
-    var input by remember { mutableStateOf("1B31") }
     fun log(message: String) {
         if (!TextUtils.isEmpty(message)) {
             configView.update(log = "${config.log}${message}")
         }
     }
-    LaunchedEffect(config.isAuto) {
+    LaunchedEffect(Unit) {
         scope.launch(Dispatchers.IO) {
             while (true) {
                 if (config.isAuto && config.isOpen) {
-                    val data = if (config.isHex) input.hexToByteArray() else input.toByteArray()
-                    configView.update(tx = config.tx + data.size)
+                    val data =
+                        if (config.isHex) config.input.hexToByteArray() else config.input.toByteArray()
                     mainView.write(data)
-                    //log(if (config.isHex) data.toHexString() else input)
+                    configView.update(tx = config.tx + data.size)
                     delay(config.delayTime.toLong())
                 }
             }
@@ -126,7 +124,7 @@ fun NavContent(mainView: MainViewModel = viewModel(), configView: ConfigViewMode
                 else -> ""
             }
             log(show)
-            if ((config.display == 2 || config.display == 3) && config.rx >= 10000)
+            if ((config.display == 2 || config.display == 3) && config.log.length >= 10000)
                 configView.update(log = "")
             configView.update(rx = config.rx + it.size)
             scrollState.scrollTo(scrollState.maxValue)
@@ -154,20 +152,26 @@ fun NavContent(mainView: MainViewModel = viewModel(), configView: ConfigViewMode
             verticalAlignment = Alignment.CenterVertically,
         ) {
             EditText(
-                input, modifier = Modifier
+                config.input, modifier = Modifier
                     .weight(1f)
                     .wrapContentHeight()
             ) {
                 if (config.isHex) {
-                    if ("\\A[0-9a-fA-F]+\\z".toRegex().matches(it)) input = it
-                } else input = it
+                    if ("\\A[0-9a-fA-F]+\\z".toRegex().matches(it)) {
+                        configView.update(input = it)
+                        App.sp.edit().putString("input", it).apply()
+                    }
+                } else {
+                    configView.update(input = it)
+                    App.sp.edit().putString("input", it).apply()
+                }
             }
             Button(
                 onClick = {
-                    val data = if (config.isHex) input.hexToByteArray() else input.toByteArray()
+                    val data =
+                        if (config.isHex) config.input.hexToByteArray() else config.input.toByteArray()
                     configView.update(tx = config.tx + data.size)
                     mainView.write(data)
-                    //log(input)
                 }, shape = RoundedCornerShape(0.dp), enabled = config.isOpen
             ) { Text(text = "发送") }
         }
@@ -180,7 +184,9 @@ fun EditText(inputValue: String, modifier: Modifier = Modifier, onValueChange: (
         value = inputValue,
         onValueChange = onValueChange,
         modifier = modifier
-            .border(width = 0.5.dp, color = Color.Black, shape = RoundedCornerShape(1.dp))
+            .border(
+                width = 0.5.dp, color = Color.Black, shape = RoundedCornerShape(1.dp)
+            )
             .padding(3.dp),
     )
 }

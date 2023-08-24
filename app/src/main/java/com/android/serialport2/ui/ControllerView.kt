@@ -58,6 +58,10 @@ fun ControllerView(
                 App.sp.getString("baud", "")?.apply {
                     if (!TextUtils.isEmpty(this)) configView.update(baud = this)
                 }
+                App.sp.getString("input", "")?.apply {
+                    if (!TextUtils.isEmpty(this)) configView.update(input = this)
+                }
+                configView.update(display = App.sp.getInt("display", 1))
                 runCatching {
                     if (TextUtils.isEmpty(config.dev)) configView.update(dev = devices[0])
                 }
@@ -70,7 +74,9 @@ fun ControllerView(
             .padding(5.dp)
             .verticalScroll(rememberScrollState())
     ) {
-        Text(text = "串口节点", modifier = Modifier.clickable { configView.update(log = "${config.log}\n${info()}") })
+        Text(
+            text = "串口节点",
+            modifier = Modifier.clickable { configView.update(log = "${config.log}\n${info()}") })
         MySpinner(items = config.devices, selectedItem = config.dev, onItemSelected = { it, _ ->
             configView.update(dev = it)
             App.sp.edit().putString("dev", it).apply()
