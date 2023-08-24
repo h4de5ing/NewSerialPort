@@ -48,7 +48,7 @@ android {
     }
 
     productFlavors {
-        nromal {
+        normal {
             applicationId = 'com.android.serialport2'
             manifestPlaceholders = [sharedUserId    : "com.android.serialport2",
                                     applicationLabel: "SerialPort",
@@ -60,14 +60,14 @@ android {
             manifestPlaceholders = [sharedUserId    : "android.uid.system",
                                     applicationLabel: "SystemSerialPort",
                                     applicationIcon : "@mipmap/ic_launcher_system"]
-            signingConfig signingConfigs.system
+//            signingConfig signingConfigs.system
         }
     }
     buildTypes {
         debug {
             minifyEnabled false
-//            signingConfig signingConfigs.normal
-            signingConfig signingConfigs.system
+            signingConfig signingConfigs.normal
+//            signingConfig signingConfigs.system
         }
         release {
             minifyEnabled false
