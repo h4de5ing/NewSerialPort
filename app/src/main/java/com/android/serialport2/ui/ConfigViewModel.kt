@@ -1,18 +1,12 @@
 package com.android.serialport2.ui
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 
 class ConfigViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(Config())
     val uiState: StateFlow<Config> = _uiState
-
-    init {
-        observeConfig()
-    }
 
     fun update(
         devices: List<String> = _uiState.value.devices,
@@ -42,10 +36,6 @@ class ConfigViewModel : ViewModel() {
             rx = rx,
             log = log,
         )
-    }
-
-    private fun observeConfig() {
-        viewModelScope.launch {}
     }
 }
 

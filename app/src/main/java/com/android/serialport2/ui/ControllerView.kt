@@ -52,21 +52,14 @@ fun ControllerView(
                 newList.addAll(context.resources.getStringArray(R.array.node_index).toList())
                 val devices = newList.distinct().filter { File(it).exists() }.sorted()
                 configView.update(devices = devices)
-
                 App.sp.getString("dev", "")?.apply {
-                    if (!TextUtils.isEmpty(this)) {
-                        configView.update(dev = this)
-                    }
+                    if (!TextUtils.isEmpty(this)) configView.update(dev = this)
                 }
                 App.sp.getString("baud", "")?.apply {
-                    if (!TextUtils.isEmpty(this)) {
-                        configView.update(baud = this)
-                    }
+                    if (!TextUtils.isEmpty(this)) configView.update(baud = this)
                 }
                 runCatching {
-                    if (TextUtils.isEmpty(config.dev)) {
-                        configView.update(dev = devices[0])
-                    }
+                    if (TextUtils.isEmpty(config.dev)) configView.update(dev = devices[0])
                 }
             }
         }
@@ -77,9 +70,7 @@ fun ControllerView(
             .padding(5.dp)
             .verticalScroll(rememberScrollState())
     ) {
-        Text(text = "串口节点", modifier = Modifier.clickable {
-            configView.update(log = info())
-        })
+        Text(text = "串口节点", modifier = Modifier.clickable { configView.update(log = "${config.log}\n${info()}") })
         MySpinner(items = config.devices, selectedItem = config.dev, onItemSelected = { it, _ ->
             configView.update(dev = it)
             App.sp.edit().putString("dev", it).apply()
@@ -114,9 +105,7 @@ fun ControllerView(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(text = "Auto")
-            Checkbox(checked = config.isAuto, onCheckedChange = {
-                configView.update(isAuto = it)
-            })
+            Checkbox(checked = config.isAuto, onCheckedChange = { configView.update(isAuto = it) })
         }
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -124,9 +113,7 @@ fun ControllerView(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(text = "Hex")
-            Checkbox(checked = config.isHex, onCheckedChange = {
-                configView.update(isHex = it)
-            })
+            Checkbox(checked = config.isHex, onCheckedChange = { configView.update(isHex = it) })
         }
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -134,9 +121,9 @@ fun ControllerView(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(text = "Google")
-            Checkbox(checked = config.isGoogle, onCheckedChange = {
-                configView.update(isGoogle = it)
-            })
+            Checkbox(
+                checked = config.isGoogle,
+                onCheckedChange = { configView.update(isGoogle = it) })
         }
         Column {
             Text(text = "Tx:${config.tx}")
@@ -150,8 +137,7 @@ fun ControllerView(
                 try {
                     mainView.setupSerial(path = config.dev, config.baud.toInt())
                 } catch (e: Exception) {
-                    val log = config.log
-                    configView.update(log = "${log}串口打开异常原因:${e.message}\n")
+                    configView.update(log = "${config.log}串口打开异常原因:${e.message}\n")
                     e.printStackTrace()
                 }
             } else mainView.close()

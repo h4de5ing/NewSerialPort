@@ -1,14 +1,12 @@
 package com.android.serialport2.ui
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.DropdownMenu
@@ -36,7 +34,6 @@ import androidx.compose.ui.unit.dp
  * @param expandedChange 列表 展开/收起 状态改变会标
  * @param itemContent 描述item的Compose组件内容。lambda参数：data为数据（dataArray[index])，modifier里写好了用于监听item的点击选择回调
  */
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun <T> Spinner(
     modifier: Modifier = Modifier,
