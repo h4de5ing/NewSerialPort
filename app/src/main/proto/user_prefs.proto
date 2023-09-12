@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+option java_package = "com.android.serialport2.datastore";
+option java_multiple_files = true;
+
+message UserPreferences {
+  bool isAuto = 1;
+  bool isHex = 2;
+  bool isGoogle = 3;
+  bool isOpen = 4;
+  uint32 delayTime = 5;
+  uint32 display = 6;
+  uint64 tx = 7;
+  uint64 rx = 8;
+  string input = 9;
+}

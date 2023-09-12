@@ -48,5 +48,17 @@
         <item>/dev/ttyHS1</item>
         <item>/dev/ttyHS2</item>
         <item>/dev/ttyHS3</item>
+        <item>/dev/ttyGS0</item>
+        <item>/dev/ttyGS1</item>
+        <item>/dev/ttyGS2</item>
+        <item>/dev/ttyGS3</item>
+        <item>/dev/ttyS0</item>
+        <item>/dev/ttyS1</item>
+        <item>/dev/ttyS2</item>
+        <item>/dev/ttyS3</item>
+        <item>/dev/ttyWCH0</item>
+        <item>/dev/ttyWCH1</item>
+        <item>/dev/ttyWCH2</item>
+        <item>/dev/ttyWCH3</item>
     </string-array>
 </resources>

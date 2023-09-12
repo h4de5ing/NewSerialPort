@@ -52,16 +52,16 @@ fun ControllerView(
                 newList.addAll(context.resources.getStringArray(R.array.node_index).toList())
                 val devices = newList.distinct().filter { File(it).exists() }.sorted()
                 configView.update(devices = devices)
-                App.sp.getString("dev", "")?.apply {
-                    if (!TextUtils.isEmpty(this)) configView.update(dev = this)
-                }
-                App.sp.getString("baud", "")?.apply {
-                    if (!TextUtils.isEmpty(this)) configView.update(baud = this)
-                }
-                App.sp.getString("input", "")?.apply {
-                    if (!TextUtils.isEmpty(this)) configView.update(input = this)
-                }
-                configView.update(display = App.sp.getInt("display", 1))
+//                App.sp.getString("dev", "")?.apply {
+//                    if (!TextUtils.isEmpty(this)) configView.update(dev = this)
+//                }
+//                App.sp.getString("baud", "")?.apply {
+//                    if (!TextUtils.isEmpty(this)) configView.update(baud = this)
+//                }
+//                App.sp.getString("input", "")?.apply {
+//                    if (!TextUtils.isEmpty(this)) configView.update(input = this)
+//                }
+//                configView.update(display = App.sp.getInt("display", 1))
                 runCatching {
                     if (TextUtils.isEmpty(config.dev)) configView.update(dev = devices[0])
                 }
@@ -74,24 +74,23 @@ fun ControllerView(
             .padding(5.dp)
             .verticalScroll(rememberScrollState())
     ) {
-        Text(
-            text = "串口节点",
+        Text(text = "串口节点",
             modifier = Modifier.clickable { configView.update(log = "${config.log}\n${info()}") })
         MySpinner(items = config.devices, selectedItem = config.dev, onItemSelected = { it, _ ->
             configView.update(dev = it)
-            App.sp.edit().putString("dev", it).apply()
+//            App.sp.edit().putString("dev", it).apply()
         })
         Text(text = "波特率")
         MySpinner(items = baudList.toList(), selectedItem = config.baud, onItemSelected = { it, _ ->
             configView.update(baud = it)
-            App.sp.edit().putString("baud", it).apply()
+//            App.sp.edit().putString("baud", it).apply()
         })
         Text(text = "显示")
         MySpinner(items = displayList.toList(),
             selectedItem = displayList[config.display],
             onItemSelected = { _, position ->
                 configView.update(display = position)
-                App.sp.edit().putInt("display", position).apply()
+//                App.sp.edit().putInt("display", position).apply()
             })
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -127,8 +126,7 @@ fun ControllerView(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(text = "Google")
-            Checkbox(
-                checked = config.isGoogle,
+            Checkbox(checked = config.isGoogle,
                 onCheckedChange = { configView.update(isGoogle = it) })
         }
         Column {

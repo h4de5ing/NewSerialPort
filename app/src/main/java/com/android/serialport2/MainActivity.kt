@@ -1,5 +1,6 @@
 package com.android.serialport2
 
+import android.content.Context
 import android.os.Bundle
 import android.text.TextUtils
 import androidx.activity.ComponentActivity
@@ -40,29 +41,59 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
+import androidx.datastore.core.DataStore
+import androidx.datastore.dataStore
+import androidx.datastore.migrations.SharedPreferencesMigration
+import androidx.datastore.migrations.SharedPreferencesView
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.android.serialport2.other.App
+import com.android.serialport2.data.TasksViewModel
+import com.android.serialport2.data.TasksViewModelFactory
+import com.android.serialport2.data.UserPreferencesRepository
+import com.android.serialport2.data.UserPreferencesSerializer
+import com.android.serialport2.datastore.UserPreferences
 import com.android.serialport2.other.hexToByteArray
 import com.android.serialport2.other.toHexString
 import com.android.serialport2.ui.Config
 import com.android.serialport2.ui.ConfigViewModel
 import com.android.serialport2.ui.ControllerView
+import com.android.serialport2.ui.HexInput
 import com.android.serialport2.ui.MainViewModel
 import com.android.serialport2.ui.theme.NewSerialPortTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+private const val USER_PREFERENCES_NAME = "user_preferences"
+private const val DATA_STORE_FILE_NAME = "user_prefs.pb"
+
+private val Context.userPreferencesStore: DataStore<UserPreferences> by dataStore(fileName = DATA_STORE_FILE_NAME,
+    serializer = UserPreferencesSerializer,
+    produceMigrations = { context ->
+        listOf(SharedPreferencesMigration(
+            context, USER_PREFERENCES_NAME
+        ) { _: SharedPreferencesView, currentData: UserPreferences ->
+            currentData
+        })
+    })
+
 class MainActivity : ComponentActivity() {
+    private lateinit var viewModel: TasksViewModel
+
     @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        viewModel = ViewModelProvider(
+            this, TasksViewModelFactory(UserPreferencesRepository(userPreferencesStore))
+        )[TasksViewModel::class.java]
+
         setContent {
             NewSerialPortTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
                 ) {
                     NavigationDrawer(calculateWindowSizeClass(this)) { NavContent() }
+//                    Test(viewModel)
                 }
             }
         }
@@ -76,8 +107,7 @@ fun NavigationDrawer(
     val windowWidthSizeClass = windowSizeClass.widthSizeClass
     if (windowWidthSizeClass == WindowWidthSizeClass.Compact) {
         val drawerState = rememberDrawerState(DrawerValue.Closed)
-        ModalNavigationDrawer(
-            drawerState = drawerState,
+        ModalNavigationDrawer(drawerState = drawerState,
             drawerContent = { DrawerContent() }) { content() }
     } else {
         PermanentNavigationDrawer(drawerContent = { DrawerContent() }) { content() }
@@ -124,8 +154,9 @@ fun NavContent(mainView: MainViewModel = viewModel(), configView: ConfigViewMode
                 else -> ""
             }
             log(show)
-            if ((config.display == 2 || config.display == 3) && config.log.length >= 10000)
-                configView.update(log = "")
+            if ((config.display == 2 || config.display == 3) && config.log.length >= 10000) configView.update(
+                log = ""
+            )
             configView.update(rx = config.rx + it.size)
             scrollState.scrollTo(scrollState.maxValue)
         }
@@ -144,6 +175,7 @@ fun NavContent(mainView: MainViewModel = viewModel(), configView: ConfigViewMode
                     .verticalScroll(scrollState)
             )
         }
+        HexInput(onChange = { configView.update(input = "${config.input}${it}") })
         Row(
             modifier = Modifier
                 .wrapContentHeight()
@@ -159,11 +191,9 @@ fun NavContent(mainView: MainViewModel = viewModel(), configView: ConfigViewMode
                 if (config.isHex) {
                     if ("\\A[0-9a-fA-F]+\\z".toRegex().matches(it)) {
                         configView.update(input = it)
-                        App.sp.edit().putString("input", it).apply()
                     }
                 } else {
                     configView.update(input = it)
-                    App.sp.edit().putString("input", it).apply()
                 }
             }
             Button(
@@ -172,7 +202,10 @@ fun NavContent(mainView: MainViewModel = viewModel(), configView: ConfigViewMode
                         if (config.isHex) config.input.hexToByteArray() else config.input.toByteArray()
                     configView.update(tx = config.tx + data.size)
                     mainView.write(data)
-                }, shape = RoundedCornerShape(0.dp), enabled = config.isOpen
+                },
+                shape = RoundedCornerShape(0.dp),
+                modifier = Modifier.padding(3.dp),
+                enabled = config.isOpen
             ) { Text(text = "发送") }
         }
     }

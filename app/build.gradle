@@ -1,6 +1,8 @@
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
+    id 'com.google.protobuf'
+    id 'org.jetbrains.kotlin.plugin.serialization'
 }
 
 static def gitSha() {
@@ -78,7 +80,13 @@ android {
         sourceCompatibility JavaVersion.VERSION_19
         targetCompatibility JavaVersion.VERSION_19
     }
-    kotlinOptions { jvmTarget = '19' }
+    kotlinOptions {
+        jvmTarget = '19'
+        // Enable Compose Compiler Report
+        freeCompilerArgs += ["-P", "plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination=" + project.buildDir.absolutePath + "/compose_metrics"]
+        // Enable Compose Compiler Metrics
+        freeCompilerArgs += ["-P", "plugin:androidx.compose.compiler.plugins.kotlin:metricsDestination=" + project.buildDir.absolutePath + "/compose_metrics"]
+    }
     buildFeatures {
         compose true
         buildConfig true
@@ -94,6 +102,7 @@ android {
     sourceSets {
         main {
             jniLibs.srcDirs = ['src/main/jniLibs']
+            proto { srcDir 'src/main/proto' }
         }
     }
     applicationVariants.configureEach { variant ->
@@ -104,6 +113,7 @@ android {
             variant.outputs.each {
                 def fromFile = it.outputFile
                 def intoFile = "D:/test/${prefix}/v${android.defaultConfig.versionName}/"
+//                def intoFile = "\\\\192.168.0.74\\亿道信息\\RD\\SW_A\\71备份过来的\\APP软件版本\\串口工具\\v${android.defaultConfig.versionName}"
                 copy {
                     from fromFile
                     into intoFile
@@ -116,16 +126,36 @@ android {
 }
 
 dependencies {
-    implementation 'androidx.core:core-ktx:1.10.1'
-    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.1'
+    implementation 'androidx.core:core-ktx:1.12.0-rc01'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.7.0-alpha01'
+    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0-alpha01"
+    implementation "androidx.lifecycle:lifecycle-livedata-ktx:2.7.0-alpha01"
     implementation 'androidx.activity:activity-compose:1.7.2'
     implementation platform("androidx.compose:compose-bom:2023.08.00")
     implementation 'androidx.compose.ui:ui'
     implementation 'androidx.compose.ui:ui-graphics'
     implementation 'androidx.compose.ui:ui-tooling-preview'
-    implementation 'androidx.compose.material3:material3:1.2.0-alpha05'
-    implementation 'androidx.compose.material3:material3-window-size-class:1.2.0-alpha05'
+    implementation 'androidx.compose.material3:material3:1.2.0-alpha06'
+    implementation 'androidx.compose.material3:material3-window-size-class:1.2.0-alpha06'
     implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0-alpha01'
-    implementation 'androidx.compose.runtime:runtime-livedata:1.6.0-alpha03'
+    implementation 'androidx.compose.runtime:runtime-livedata:1.6.0-alpha04'
     implementation 'com.google.accompanist:accompanist-adaptive:0.33.0-alpha'
+    implementation 'androidx.datastore:datastore:1.0.0'
+    implementation 'androidx.datastore:datastore-preferences:1.0.0'
+    implementation 'com.google.protobuf:protobuf-javalite:3.19.4'
+    implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0'
+}
+protobuf {
+    protoc {
+        artifact = 'com.google.protobuf:protoc:3.14.0'
+    }
+    generateProtoTasks {
+        all().each { task ->
+            task.builtins {
+                java {
+                    option "lite"
+                }
+            }
+        }
+    }
 }
