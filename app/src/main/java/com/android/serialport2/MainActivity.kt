@@ -191,6 +191,7 @@ fun NavContent(mainView: MainViewModel = viewModel(), configView: ConfigViewMode
                 if (config.isHex) {
                     if ("\\A[0-9a-fA-F]+\\z".toRegex().matches(it)) {
                         configView.update(input = it)
+                        //TODO 移动光标到最后
                     }
                 } else {
                     configView.update(input = it)

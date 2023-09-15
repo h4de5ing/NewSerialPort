@@ -16,8 +16,6 @@
 
 package android_serialport_api;
 
-import android.util.Log;
-
 import java.io.File;
 import java.io.FileDescriptor;
 import java.io.FileInputStream;
@@ -38,7 +36,6 @@ public class SerialPort {
     public SerialPort(File device, int baudRate, int flags) throws SecurityException, IOException {
         mFd = open(device.getAbsolutePath(), baudRate, flags);
         if (mFd == null) {
-            Log.e("serial_port", device.getAbsolutePath() + " 串口打开异常");
             throw new IOException();
         }
         mFileInputStream = new FileInputStream(mFd);
