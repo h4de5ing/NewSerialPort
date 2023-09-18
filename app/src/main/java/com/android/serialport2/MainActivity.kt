@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -107,8 +106,12 @@ fun NavigationDrawer(
     val windowWidthSizeClass = windowSizeClass.widthSizeClass
     if (windowWidthSizeClass == WindowWidthSizeClass.Compact) {
         val drawerState = rememberDrawerState(DrawerValue.Closed)
-        ModalNavigationDrawer(drawerState = drawerState,
-            drawerContent = { DrawerContent() }) { content() }
+        ModalNavigationDrawer(drawerState = drawerState, drawerContent = { DrawerContent() }) {
+            Column {
+                Text(text = "向右滑打开控制菜单")
+                content()
+            }
+        }
     } else {
         PermanentNavigationDrawer(drawerContent = { DrawerContent() }) { content() }
     }
@@ -175,39 +178,39 @@ fun NavContent(mainView: MainViewModel = viewModel(), configView: ConfigViewMode
                     .verticalScroll(scrollState)
             )
         }
-        HexInput(onChange = { configView.update(input = "${config.input}${it}") })
-        Row(
-            modifier = Modifier
-                .wrapContentHeight()
-                .padding(3.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            EditText(
-                config.input, modifier = Modifier
-                    .weight(1f)
-                    .wrapContentHeight()
+        Column {
+            HexInput(onChange = { configView.update(input = "${config.input}${it}") })
+            Row(
+                modifier = Modifier
+                    .padding(3.dp)
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                if (config.isHex) {
-                    if ("\\A[0-9a-fA-F]+\\z".toRegex().matches(it)) {
+                EditText(
+                    config.input, modifier = Modifier
+                        .weight(1f)
+                        .padding(5.dp)
+                ) {
+                    if (config.isHex) {
+                        if ("\\A[0-9a-fA-F]+\\z".toRegex().matches(it)) {
+                            configView.update(input = it)
+                        }
+                    } else {
                         configView.update(input = it)
-                        //TODO 移动光标到最后
                     }
-                } else {
-                    configView.update(input = it)
                 }
+                Button(
+                    onClick = {
+                        val data =
+                            if (config.isHex) config.input.hexToByteArray() else config.input.toByteArray()
+                        configView.update(tx = config.tx + data.size)
+                        mainView.write(data)
+                    },
+                    shape = RoundedCornerShape(0.dp),
+                    modifier = Modifier.padding(3.dp),
+                    enabled = config.isOpen
+                ) { Text(text = "发送") }
             }
-            Button(
-                onClick = {
-                    val data =
-                        if (config.isHex) config.input.hexToByteArray() else config.input.toByteArray()
-                    configView.update(tx = config.tx + data.size)
-                    mainView.write(data)
-                },
-                shape = RoundedCornerShape(0.dp),
-                modifier = Modifier.padding(3.dp),
-                enabled = config.isOpen
-            ) { Text(text = "发送") }
         }
     }
 }
@@ -222,5 +225,6 @@ fun EditText(inputValue: String, modifier: Modifier = Modifier, onValueChange: (
                 width = 0.5.dp, color = Color.Black, shape = RoundedCornerShape(1.dp)
             )
             .padding(3.dp),
+        minLines = 1
     )
 }

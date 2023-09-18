@@ -82,7 +82,7 @@ fun ControllerView(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier
-                .padding(top = 5.dp, bottom = 10.dp)
+                .padding(top = 5.dp, bottom = 5.dp)
                 .fillMaxWidth()
         ) {
             Text(text = "定时(ms)")
