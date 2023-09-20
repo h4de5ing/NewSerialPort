@@ -113,7 +113,6 @@ android {
             variant.outputs.each {
                 def fromFile = it.outputFile
                 def intoFile = "D:/test/${prefix}/v${android.defaultConfig.versionName}/"
-//                def intoFile = "\\\\192.168.0.74\\亿道信息\\RD\\SW_A\\71备份过来的\\APP软件版本\\串口工具\\v${android.defaultConfig.versionName}"
                 copy {
                     from fromFile
                     into intoFile
