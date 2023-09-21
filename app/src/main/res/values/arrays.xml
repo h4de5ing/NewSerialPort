@@ -39,6 +39,8 @@
         <item>/dev/ttyUSB4</item>
         <item>/dev/ttyUW1</item>
         <item>/dev/ttyUW2</item>
+        <item>/dev/ttySWK1</item>
+        <item>/dev/ttySWK2</item>
         <item>/dev/ttySWK3</item>
         <item>/dev/ttyMSM0</item>
         <item>/dev/ttyMSM1</item>
@@ -56,6 +58,12 @@
         <item>/dev/ttyS1</item>
         <item>/dev/ttyS2</item>
         <item>/dev/ttyS3</item>
+        <item>/dev/ttyS4</item>
+        <item>/dev/ttyS5</item>
+        <item>/dev/ttyS6</item>
+        <item>/dev/ttyS7</item>
+        <item>/dev/ttyS8</item>
+        <item>/dev/ttyS9</item>
         <item>/dev/ttyWCH0</item>
         <item>/dev/ttyWCH1</item>
         <item>/dev/ttyWCH2</item>
