@@ -97,7 +97,6 @@ class MainActivity : ComponentActivity() {
                 ) {
                     CompositionLocalProvider(LocalDataSaver provides dataSaverPreferences) {
                         NavigationDrawer(calculateWindowSizeClass(this)) { NavContent() }
-//                    Test(viewModel)
                     }
                 }
             }
@@ -234,13 +233,10 @@ fun NavContent(
 @Composable
 fun EditText(inputValue: String, modifier: Modifier = Modifier, onValueChange: ((String) -> Unit)) {
     BasicTextField(
-        value = inputValue,
-        onValueChange = onValueChange,
-        modifier = modifier
+        value = inputValue, onValueChange = onValueChange, modifier = modifier
             .border(
                 width = 0.5.dp, color = Color.Black, shape = RoundedCornerShape(1.dp)
             )
-            .padding(3.dp),
-        minLines = 1
+            .padding(3.dp), minLines = 1
     )
 }

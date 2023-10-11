@@ -81,21 +81,27 @@ fun ControllerView(
             .padding(5.dp)
             .verticalScroll(rememberScrollState())
     ) {
-        Text(text = "串口节点",
+        Text(text = "串口设置",
             modifier = Modifier.clickable { configView.update(log = "${config.log}\n${info()}") })
-        MySpinner(items = config.devices, selectedItem = config.dev, onItemSelected = { it, _ ->
+        SpinnerEdit(items = config.devices, hint = "串口节点", value = config.dev) { _, it ->
             configView.update(dev = it)
-        })
-        Text(text = "波特率")
-        MySpinner(items = baudList.toList(), selectedItem = config.baud, onItemSelected = { it, _ ->
+        }
+        SpinnerEdit(
+            items = baudList.toList(),
+            hint = "波特率",
+            value = config.baud,
+            readOnly = true
+        ) { _, it ->
             configView.update(baud = it)
-        })
-        Text(text = "显示")
-        MySpinner(items = displayList.toList(),
-            selectedItem = displayList[config.display],
-            onItemSelected = { _, position ->
-                configView.update(display = position)
-            })
+        }
+        SpinnerEdit(
+            items = displayList.toList(),
+            hint = "显示方式",
+            value = displayList[config.display],
+            readOnly = true
+        ) { index, _ ->
+            configView.update(display = index)
+        }
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,

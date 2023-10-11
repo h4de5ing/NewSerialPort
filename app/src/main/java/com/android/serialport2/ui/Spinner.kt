@@ -9,9 +9,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 
 /**
@@ -77,22 +81,16 @@ fun <T> Spinner(
         if (dataArray != null) {
             //显示/隐藏动画
             AnimatedVisibility(expanded) {
-                LazyColumn(modifier = Modifier.heightIn(max = maxShowHeight),
-                    content = {
-                        items(dataArray.size) {
-                            itemContent.invoke(
-                                dataArray[it],
-                                Modifier.clickable(enabled = enabled) {
-                                    selectChange.invoke(
-                                        it,
-                                        dataArray[it]
-                                    )
-
-                                }
+                LazyColumn(modifier = Modifier.heightIn(max = maxShowHeight), content = {
+                    items(dataArray.size) {
+                        itemContent.invoke(dataArray[it], Modifier.clickable(enabled = enabled) {
+                            selectChange.invoke(
+                                it, dataArray[it]
                             )
-                        }
+
+                        })
                     }
-                )
+                })
             }
         }
 
@@ -107,7 +105,7 @@ fun <T> Spinner2(
     dropDownModifier: Modifier = Modifier,
     items: List<T>,
     selectedItem: T,
-    onItemSelected: (T,Int) -> Unit,
+    onItemSelected: (T, Int) -> Unit,
     selectedItemFactory: @Composable (Modifier, T) -> Unit,
     dropdownItemFactory: @Composable (T, Int) -> Unit,
 ) {
@@ -123,7 +121,7 @@ fun <T> Spinner2(
                 DropdownMenuItem(text = {
                     dropdownItemFactory(element, index)
                 }, onClick = {
-                    onItemSelected(items[index],index)
+                    onItemSelected(items[index], index)
                     expanded = false
                 })
             }
@@ -134,18 +132,13 @@ fun <T> Spinner2(
 
 @Composable
 fun MySpinner(
-    items: List<String>,
-    selectedItem: String,
-    onItemSelected: (String,Int) -> Unit
+    items: List<String>, selectedItem: String, onItemSelected: (String, Int) -> Unit
 ) {
-    Spinner2(
-        modifier = Modifier
-            .wrapContentSize()
-            .border(
-                width = 0.5.dp,
-                color = Color.Black,
-                shape = RoundedCornerShape(1.dp)
-            ),
+    Spinner2(modifier = Modifier
+        .wrapContentSize()
+        .border(
+            width = 0.5.dp, color = Color.Black, shape = RoundedCornerShape(1.dp)
+        ),
         dropDownModifier = Modifier.wrapContentSize(),
         items = items,
         selectedItem = selectedItem,
@@ -166,6 +159,36 @@ fun MySpinner(
         },
         dropdownItemFactory = { item, _ ->
             Text(text = item)
+        })
+}
+
+@Composable
+fun SpinnerEdit(
+    readOnly: Boolean = false,
+    hint: String = "",
+    value: String,
+    items: List<String>,
+    onValueChange: (Int, String) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val icon = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown
+    Box(modifier = Modifier.width(200.dp)) {
+        OutlinedTextField(readOnly = readOnly,
+            value = value,
+            onValueChange = { onValueChange(-1, it) },
+            label = { Text(hint) },
+            trailingIcon = {
+                Icon(icon, "contentDescription", Modifier.clickable { expanded = !expanded })
+            })
+        DropdownMenu(offset = DpOffset(100.dp, 0.dp),
+            expanded = expanded,
+            onDismissRequest = { expanded = false }) {
+            items.forEachIndexed { index, label ->
+                DropdownMenuItem(text = { Text(text = label) }, onClick = {
+                    onValueChange(index, label)
+                    expanded = false
+                })
+            }
         }
-    )
+    }
 }
