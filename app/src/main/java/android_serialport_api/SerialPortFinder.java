@@ -76,17 +76,13 @@ public class SerialPortFinder {
         return mDrivers;
     }
 
-    public List<String> getAllDevs() {
+    public List<String> getAllDevs() throws IOException {
         List<String> devices = new ArrayList<>();
-        try {
-            for (Driver driver : getDrivers()) {
-                for (File file : driver.getDevices()) {
-                    String device = file.getAbsolutePath();
-                    devices.add(device);
-                }
+        for (Driver driver : getDrivers()) {
+            for (File file : driver.getDevices()) {
+                String device = file.getAbsolutePath();
+                devices.add(device);
             }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
         return devices;
     }

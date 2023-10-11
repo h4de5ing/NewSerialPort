@@ -31,6 +31,7 @@ import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -51,6 +52,7 @@ import com.android.serialport2.data.TasksViewModelFactory
 import com.android.serialport2.data.UserPreferencesRepository
 import com.android.serialport2.data.UserPreferencesSerializer
 import com.android.serialport2.datastore.UserPreferences
+import com.android.serialport2.other.App.Companion.dataSaverPreferences
 import com.android.serialport2.other.hexToByteArray
 import com.android.serialport2.other.toHexString
 import com.android.serialport2.ui.Config
@@ -58,7 +60,9 @@ import com.android.serialport2.ui.ConfigViewModel
 import com.android.serialport2.ui.ControllerView
 import com.android.serialport2.ui.HexInput
 import com.android.serialport2.ui.MainViewModel
+import com.android.serialport2.ui.WSViewModel
 import com.android.serialport2.ui.theme.NewSerialPortTheme
+import com.funny.data_saver.core.LocalDataSaver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -91,8 +95,10 @@ class MainActivity : ComponentActivity() {
                 Surface(
                     modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
                 ) {
-                    NavigationDrawer(calculateWindowSizeClass(this)) { NavContent() }
+                    CompositionLocalProvider(LocalDataSaver provides dataSaverPreferences) {
+                        NavigationDrawer(calculateWindowSizeClass(this)) { NavContent() }
 //                    Test(viewModel)
+                    }
                 }
             }
         }
@@ -125,7 +131,11 @@ fun DrawerContent() {
 }
 
 @Composable
-fun NavContent(mainView: MainViewModel = viewModel(), configView: ConfigViewModel = viewModel()) {
+fun NavContent(
+    mainView: MainViewModel = viewModel(),
+    configView: ConfigViewModel = viewModel(),
+    ws: WSViewModel = viewModel()
+) {
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
     val config by configView.uiState.collectAsState(initial = Config())
@@ -161,6 +171,12 @@ fun NavContent(mainView: MainViewModel = viewModel(), configView: ConfigViewMode
                 log = ""
             )
             configView.update(rx = config.rx + it.size)
+            scrollState.scrollTo(scrollState.maxValue)
+        }
+    }
+    LaunchedEffect(ws.uiState) {
+        ws.uiState.collect {
+            configView.update(log = "${config.log}\n${it}")
             scrollState.scrollTo(scrollState.maxValue)
         }
     }
