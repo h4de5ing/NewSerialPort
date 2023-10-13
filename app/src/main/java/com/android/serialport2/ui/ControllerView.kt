@@ -17,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -33,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -58,6 +60,7 @@ fun ControllerView(
     val baudList = stringArrayResource(id = R.array.baud)
     val scope = rememberCoroutineScope()
     val showingDialog = remember { mutableStateOf(false) }
+    val sync by ws.sync.collectAsState()
     SideEffect {
         scope.launch {
             withContext(Dispatchers.IO) {
@@ -146,6 +149,10 @@ fun ControllerView(
             Text(text = "Tx:${config.tx}")
             Text(text = "Rx:${config.rx}")
         }
+        Icon(
+            painter = painterResource(id = if (sync) R.drawable.baseline_sync_24 else R.drawable.baseline_sync_disabled_24),
+            contentDescription = "Data Swap"
+        )
         Button(
             onClick = { configView.update(tx = 0, rx = 0, log = "") },
             shape = RoundedCornerShape(0.dp)

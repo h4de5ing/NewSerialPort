@@ -15,44 +15,44 @@ class WSViewModel : ViewModel() {
     private var client: WebSocketClient? = null
     private val _uriState = MutableStateFlow("")
     val uriState: StateFlow<String> = _uriState
+    private val _sync = MutableStateFlow(false)
+    val sync: StateFlow<Boolean> = _sync
 
     fun updateUri(uri: String) {
         _uriState.value = uri
     }
 
-    fun start(uri: String, onChangeTips: ((String) -> Unit) = {}, onChange: ((String) -> Unit)) {
+    fun start(uri: String, onChange: ((String) -> Unit)) {
         try {
             client = object : WebSocketClient(URI(uri), Draft_6455()) {
                 override fun onOpen(handshakedata: ServerHandshake) {
-                    onChangeTips("握手成功")
+                    _sync.value = true
                 }
 
                 override fun onMessage(msg: String) {
-                    println("收到消息->${msg}")
+                    _sync.value = true
                     if (!TextUtils.isEmpty(msg)) onChange(msg)
                 }
 
                 override fun onClose(i: Int, s: String, b: Boolean) {
-                    onChangeTips("链接已关闭")
+                    _sync.value = false
                 }
 
                 override fun onError(e: Exception) {
-                    onChangeTips("发生错误已关闭")//尝试重连
+                    _sync.value = false//尝试重连
                     e.printStackTrace()
                 }
             }
             client?.connect()
         } catch (e: Exception) {
-            onChangeTips("发生异常:${e.message}")
+            _sync.value = false
             e.printStackTrace()
         }
     }
 
     fun isOpen(): Boolean = client != null && client?.isOpen == true
     fun close() {
-        client?.apply {
-            if (this.isOpen) this.close()
-        }
+        client?.apply { if (this.isOpen) this.close() }
     }
 
     fun send(msg: String) {

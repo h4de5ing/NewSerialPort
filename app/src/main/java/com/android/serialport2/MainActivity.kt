@@ -25,6 +25,7 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.PermanentNavigationDrawer
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.WindowSizeClass
@@ -58,7 +59,6 @@ import com.android.serialport2.other.toHexString
 import com.android.serialport2.ui.Config
 import com.android.serialport2.ui.ConfigViewModel
 import com.android.serialport2.ui.ControllerView
-import com.android.serialport2.ui.HexInput
 import com.android.serialport2.ui.MainViewModel
 import com.android.serialport2.ui.WSViewModel
 import com.android.serialport2.ui.defaultUri
@@ -142,6 +142,7 @@ fun NavContent(
     val scrollState = rememberScrollState()
     val config by configView.uiState.collectAsState(initial = Config())
     val wsConfig by rememberDataSaverState(key = "ws", initialValue = defaultUri)
+    var isSync by rememberDataSaverState(key = "sync", initialValue = true)
     fun log(message: String) {
         if (!TextUtils.isEmpty(message)) {
             configView.update(log = "${config.log}${message}")
@@ -162,6 +163,7 @@ fun NavContent(
     }
     LaunchedEffect(mainView.serialData) {
         mainView.serialData.collect {
+            if (isSync) wsView.send(String(it))
             val show = when (config.display) {
                 0, 2 -> it.toHexString().uppercase()
                 1, 3 -> String(it)
@@ -184,9 +186,10 @@ fun NavContent(
             if (wsView.isOpen()) wsView.close()
             wsView.start(newUri, onChange = {
                 configView.update(log = "${config.log}\n${it}")
+                val data = if (config.isHex) it.hexToByteArray() else it.toByteArray()
+                configView.update(tx = config.tx + data.size)
+                mainView.write(data)
                 scope.launch { scrollState.scrollTo(scrollState.maxValue) }
-            }, onChangeTips = {
-                configView.update(log = "${config.log}\n${it}")
             })
         }
     }
@@ -205,14 +208,14 @@ fun NavContent(
             )
         }
         Column {
-            HexInput(onChange = { configView.update(input = "${config.input}${it}") })
+//            HexInput(onChange = { configView.update(input = "${config.input}${it}") })
             Row(
                 modifier = Modifier
                     .padding(3.dp)
                     .fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                EditText(
+                InputEditText(
                     config.input, modifier = Modifier
                         .weight(1f)
                         .padding(5.dp)
@@ -239,6 +242,22 @@ fun NavContent(
             }
         }
     }
+}
+
+@Composable
+fun InputEditText(
+    inputValue: String,
+    modifier: Modifier = Modifier,
+    onValueChange: ((String) -> Unit)
+) {
+    TextField(
+        value = inputValue,
+        onValueChange = onValueChange,
+        modifier = modifier
+            .padding(1.dp)
+            .border(width = 1.dp, color = Color.Black, shape = RoundedCornerShape(0.dp)),
+        minLines = 1
+    )
 }
 
 @Composable
