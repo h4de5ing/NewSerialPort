@@ -81,8 +81,6 @@ fun ControllerView(
             .padding(5.dp)
             .verticalScroll(rememberScrollState())
     ) {
-        Text(text = "串口设置",
-            modifier = Modifier.clickable { configView.update(log = "${config.log}\n${info()}") })
         SpinnerEdit(items = config.devices, hint = "串口节点", value = config.dev) { _, it ->
             configView.update(dev = it)
         }
@@ -135,7 +133,9 @@ fun ControllerView(
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(text = "Google")
+            Text(text = "Google",modifier = Modifier.clickable {
+                configView.update(log = "${config.log}\n${info()}")
+            })
             Checkbox(checked = config.isGoogle,
                 onCheckedChange = { configView.update(isGoogle = it) })
         }

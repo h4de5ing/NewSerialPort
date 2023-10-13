@@ -46,7 +46,7 @@ data class Config(
     val delayTime: Int = 200,
     var isAuto: Boolean = false,
     val isHex: Boolean = false,
-    val isGoogle: Boolean = false,
+    val isGoogle: Boolean = true,
     val display: Int = 1,
     val tx: Long = 0,
     val rx: Long = 0,
