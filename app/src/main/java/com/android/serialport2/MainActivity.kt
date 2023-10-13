@@ -97,6 +97,7 @@ class MainActivity : ComponentActivity() {
                 ) {
                     CompositionLocalProvider(LocalDataSaver provides dataSaverPreferences) {
                         NavigationDrawer(calculateWindowSizeClass(this)) { NavContent() }
+//                        Test(viewModel)
                     }
                 }
             }

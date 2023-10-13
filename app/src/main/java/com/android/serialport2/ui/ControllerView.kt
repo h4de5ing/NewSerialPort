@@ -150,7 +150,11 @@ fun ControllerView(
         Button(onClick = {
             if (!config.isOpen) {
                 try {
-                    mainView.setupSerial(path = config.dev, config.baud.toInt())
+                    mainView.setupSerial(
+                        path = config.dev,
+                        baudRate = config.baud.toInt(),
+                        isGoogle = config.isGoogle
+                    )
                 } catch (e: Exception) {
                     configView.update(log = "${config.log}打开异常:${e.message}\n")
                 }
