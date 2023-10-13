@@ -2,26 +2,18 @@ package com.android.serialport2.data
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.launch
+import com.android.serialport2.datastore.UserPreferences
 
 
 class TasksViewModel(
     private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
-
     val userPreferencesFlow = userPreferencesRepository.userPreferencesFlow
-
-    fun showCompletedTasks(isAuto: Boolean? = null, input: String? = null) {
-        viewModelScope.launch {
-            userPreferencesRepository.updateShowCompleted(isAuto, input)
+    suspend fun user(isAuto: Boolean? = null, input: String? = null) {
+        userPreferencesRepository.getStore().updateData {
+            val default = UserPreferences.getDefaultInstance()
+            UserPreferences.newBuilder().setIsAuto(isAuto ?: default.isAuto).build()
         }
-    }
-
-    fun show(
-        onComplete: ((UserPreferencesRepository) -> Unit)
-    ) {
-        viewModelScope.launch { onComplete(userPreferencesRepository) }
     }
 }
 

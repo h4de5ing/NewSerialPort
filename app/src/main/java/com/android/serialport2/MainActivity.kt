@@ -61,8 +61,10 @@ import com.android.serialport2.ui.ControllerView
 import com.android.serialport2.ui.HexInput
 import com.android.serialport2.ui.MainViewModel
 import com.android.serialport2.ui.WSViewModel
+import com.android.serialport2.ui.defaultUri
 import com.android.serialport2.ui.theme.NewSerialPortTheme
 import com.funny.data_saver.core.LocalDataSaver
+import com.funny.data_saver.core.rememberDataSaverState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -134,11 +136,12 @@ fun DrawerContent() {
 fun NavContent(
     mainView: MainViewModel = viewModel(),
     configView: ConfigViewModel = viewModel(),
-    ws: WSViewModel = viewModel()
+    wsView: WSViewModel = viewModel()
 ) {
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
     val config by configView.uiState.collectAsState(initial = Config())
+    val wsConfig by rememberDataSaverState(key = "ws", initialValue = defaultUri)
     fun log(message: String) {
         if (!TextUtils.isEmpty(message)) {
             configView.update(log = "${config.log}${message}")
@@ -174,10 +177,17 @@ fun NavContent(
             scrollState.scrollTo(scrollState.maxValue)
         }
     }
-    LaunchedEffect(ws.uiState) {
-        ws.uiState.collect {
-            configView.update(log = "${config.log}\n${it}")
-            scrollState.scrollTo(scrollState.maxValue)
+    LaunchedEffect(wsView.uriState) {
+        wsView.uriState.collect { uri ->
+            var newUri = wsConfig
+            if (!TextUtils.isEmpty(uri)) newUri = wsView.uriState.value
+            if (wsView.isOpen()) wsView.close()
+            wsView.start(newUri, onChange = {
+                configView.update(log = "${config.log}\n${it}")
+                scope.launch { scrollState.scrollTo(scrollState.maxValue) }
+            }, onChangeTips = {
+                configView.update(log = "${config.log}\n${it}")
+            })
         }
     }
     Column(modifier = Modifier.fillMaxSize()) {

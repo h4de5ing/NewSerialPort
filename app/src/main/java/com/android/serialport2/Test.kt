@@ -30,17 +30,12 @@ fun Test(viewModel: TasksViewModel) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(text = "isAuto")
             Checkbox(checked = userPreferences.isAuto, onCheckedChange = {
-//                viewModel.showCompletedTasks(isAuto = it)
+                scope.launch { viewModel.user(isAuto = it) }
             })
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             EditText(inputValue = userPreferences.input) {
-//                viewModel.showCompletedTasks(input = it)
-                viewModel.show {
-                    scope.launch {
-
-                    }
-                }
+                scope.launch { viewModel.user(input = it) }
             }
             Button(onClick = {
                 val user = UserPreferencesSerializerBean(

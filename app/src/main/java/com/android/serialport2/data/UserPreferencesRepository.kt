@@ -17,6 +17,8 @@ class UserPreferencesRepository(private val userPreferencesStore: DataStore<User
         }
     }
 
+    fun getStore() = userPreferencesStore
+
     suspend fun updateShowCompleted(isAuto: Boolean? = null, input: String? = null) {
         userPreferencesStore.updateData { currentPreferences ->
             currentPreferences.toBuilder().setIsAuto(isAuto ?: currentPreferences.isAuto)

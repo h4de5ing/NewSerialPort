@@ -47,8 +47,11 @@ import java.io.File
 
 @Composable
 fun ControllerView(
-    mainView: MainViewModel = viewModel(), configView: ConfigViewModel = viewModel()
+    mainView: MainViewModel = viewModel(),
+    configView: ConfigViewModel = viewModel(),
+    ws: WSViewModel = viewModel()
 ) {
+    var wsConfig by rememberDataSaverState(key = "ws", initialValue = "ws://192.168.1.128:1234")
     val context = LocalContext.current
     val config by configView.uiState.collectAsState(initial = Config())
     val displayList = stringArrayResource(id = R.array.display)
@@ -133,7 +136,7 @@ fun ControllerView(
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(text = "Google",modifier = Modifier.clickable {
+            Text(text = "Google", modifier = Modifier.clickable {
                 configView.update(log = "${config.log}\n${info()}")
             })
             Checkbox(checked = config.isGoogle,
@@ -163,7 +166,10 @@ fun ControllerView(
         }, shape = RoundedCornerShape(0.dp)) {
             Text(text = if (config.isOpen) "关闭" else "打开")
         }
-        AlertSettingDialog(showingDialog = showingDialog)
+        AlertSettingDialog(showingDialog = showingDialog) {
+            wsConfig = it
+            ws.updateUri(it)
+        }
         Button(
             onClick = { showingDialog.value = !showingDialog.value },
             shape = RoundedCornerShape(0.dp)
@@ -172,8 +178,8 @@ fun ControllerView(
 }
 
 @Composable
-private fun AlertSettingDialog(showingDialog: MutableState<Boolean>) {
-    var ws by rememberDataSaverState(key = "ws", initialValue = "ws://192.168.1.128:1234")
+private fun AlertSettingDialog(showingDialog: MutableState<Boolean>, onChange: ((String) -> Unit)) {
+    var ws by rememberDataSaverState(key = "ws", initialValue = defaultUri)
     var isSync by rememberDataSaverState(key = "sync", initialValue = true)
     if (showingDialog.value) {
         AlertDialog(
@@ -209,6 +215,7 @@ private fun AlertSettingDialog(showingDialog: MutableState<Boolean>) {
             confirmButton = {
                 TextButton(
                     onClick = {
+                        onChange(ws)
                         showingDialog.value = false
                     }, modifier = Modifier.padding(16.dp)
                 ) {
