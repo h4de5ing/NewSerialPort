@@ -99,7 +99,6 @@ class MainActivity : ComponentActivity() {
                 ) {
                     CompositionLocalProvider(LocalDataSaver provides dataSaverPreferences) {
                         NavigationDrawer(calculateWindowSizeClass(this)) { NavContent() }
-//                        Test(viewModel)
                     }
                 }
             }
@@ -230,10 +229,15 @@ fun NavContent(
                 }
                 Button(
                     onClick = {
-                        val data =
-                            if (config.isHex) config.input.hexToByteArray() else config.input.toByteArray()
-                        configView.update(tx = config.tx + data.size)
-                        mainView.write(data)
+                        try {
+                            val data =
+                                if (config.isHex) config.input.hexToByteArray() else config.input.toByteArray()
+                            configView.update(tx = config.tx + data.size)
+                            mainView.write(data)
+                        } catch (e: Exception) {
+                            log("error:${e.message}")
+                            e.printStackTrace()
+                        }
                     },
                     shape = RoundedCornerShape(0.dp),
                     modifier = Modifier.padding(3.dp),

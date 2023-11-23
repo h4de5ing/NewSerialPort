@@ -17,13 +17,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,7 +33,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -61,24 +59,18 @@ fun ControllerView(
     val scope = rememberCoroutineScope()
     val showingDialog = remember { mutableStateOf(false) }
     val sync by ws.sync.collectAsState()
-    SideEffect {
-        scope.launch {
-            withContext(Dispatchers.IO) {
-                var newList = mutableListOf<String>()
-                try {
-                    newList = SerialPortFinder().allDevs
-                } catch (e: Exception) {
-                    //configView.update(log = "${config.log}\n枚举失败，请检查【/proc/tty/drivers】权限问题")
-                    e.printStackTrace()
-                }
-                newList.addAll(context.resources.getStringArray(R.array.node_index).toList())
-                val devices = newList.distinct().filter { File(it).exists() }.sorted()
-                configView.update(devices = devices)
-                runCatching {
-                    if (TextUtils.isEmpty(config.dev)) configView.update(dev = devices[0])
-                }
-            }
+    LaunchedEffect(Unit) {
+        var newList = mutableListOf<String>()
+        try {
+            newList = SerialPortFinder().allDevs
+        } catch (e: Exception) {
+            //configView.update(log = "${config.log}\n枚举失败，请检查【/proc/tty/drivers】权限问题")
+            //e.printStackTrace()
         }
+        newList.addAll(context.resources.getStringArray(R.array.node_index).toList())
+        val devices = newList.distinct().filter { File(it).exists() }.sorted()
+        configView.update(devices = devices)
+        if (TextUtils.isEmpty(config.dev)) configView.update(dev = devices[0])
     }
 
     Column(
@@ -149,10 +141,10 @@ fun ControllerView(
             Text(text = "Tx:${config.tx}")
             Text(text = "Rx:${config.rx}")
         }
-        Icon(
-            painter = painterResource(id = if (sync) R.drawable.baseline_sync_24 else R.drawable.baseline_sync_disabled_24),
-            contentDescription = "Data Swap"
-        )
+//        Icon(
+//            painter = painterResource(id = if (sync) R.drawable.baseline_sync_24 else R.drawable.baseline_sync_disabled_24),
+//            contentDescription = "Data Swap"
+//        )
         Button(
             onClick = { configView.update(tx = 0, rx = 0, log = "") },
             shape = RoundedCornerShape(0.dp)
