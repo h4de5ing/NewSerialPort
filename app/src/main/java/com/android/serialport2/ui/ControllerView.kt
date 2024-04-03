@@ -2,6 +2,7 @@ package com.android.serialport2.ui
 
 import android.text.TextUtils
 import android_serialport_api.SerialPortFinder
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -9,14 +10,20 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -40,9 +47,6 @@ import com.android.serialport2.EditText
 import com.android.serialport2.R
 import com.android.serialport2.other.info
 import com.funny.data_saver.core.rememberDataSaverState
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.File
 
 @Composable
@@ -58,6 +62,7 @@ fun ControllerView(
     val baudList = stringArrayResource(id = R.array.baud)
     val scope = rememberCoroutineScope()
     val showingDialog = remember { mutableStateOf(false) }
+    var expandSetting = remember { mutableStateOf(false) }
     val sync by ws.sync.collectAsState()
     LaunchedEffect(Unit) {
         var newList = mutableListOf<String>()
@@ -98,44 +103,53 @@ fun ControllerView(
         ) { index, _ ->
             configView.update(display = index)
         }
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier
-                .padding(top = 5.dp, bottom = 5.dp)
-                .fillMaxWidth()
-        ) {
-            Text(text = "定时(ms)")
-            EditText("${config.delayTime}", modifier = Modifier.width(50.dp)) {
-                if ("^[0-9]{1,4}\$".toRegex().matches(it)) configView.update(delayTime = it.toInt())
+        ExpandController(expandSetting, "设置") { expandSetting.value = it }
+        if (expandSetting.value) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .padding(top = 5.dp, bottom = 5.dp)
+                    .fillMaxWidth()
+            ) {
+                Text(text = "定时(ms)")
+                EditText("${config.delayTime}", modifier = Modifier.width(50.dp)) {
+                    if ("^[0-9]{1,4}\$".toRegex()
+                            .matches(it)
+                    ) configView.update(delayTime = it.toInt())
+                }
             }
-        }
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(text = "Auto")
-            Checkbox(checked = config.isAuto, onCheckedChange = { configView.update(isAuto = it) })
-        }
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(text = "Hex")
-            Checkbox(checked = config.isHex, onCheckedChange = { configView.update(isHex = it) })
-        }
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(text = "Google", modifier = Modifier.clickable {
-                configView.update(log = "${config.log}\n${info()}")
-            })
-            Checkbox(checked = config.isGoogle,
-                onCheckedChange = { configView.update(isGoogle = it) })
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(text = "Auto")
+                Checkbox(
+                    checked = config.isAuto,
+                    onCheckedChange = { configView.update(isAuto = it) })
+            }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(text = "Hex")
+                Checkbox(
+                    checked = config.isHex,
+                    onCheckedChange = { configView.update(isHex = it) })
+            }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(text = "Google", modifier = Modifier.clickable {
+                    configView.update(log = "${config.log}\n${info()}")
+                })
+                Checkbox(checked = config.isGoogle,
+                    onCheckedChange = { configView.update(isGoogle = it) })
+            }
         }
         Column {
             Text(text = "Tx:${config.tx}")
@@ -222,5 +236,29 @@ private fun AlertSettingDialog(showingDialog: MutableState<Boolean>, onChange: (
                 }
             },
         )
+    }
+}
+
+@Composable
+fun ExpandController(expand: MutableState<Boolean>, title: String, onChange: ((Boolean) -> Unit)) {
+    Column {
+        Row(
+            modifier = Modifier
+                .height(40.dp)
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.primaryContainer)
+                .clickable {
+                    expand.value = !expand.value
+                    onChange(expand.value)
+                },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(text = title)
+            Icon(
+                imageVector = if (expand.value) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                contentDescription = ""
+            )
+        }
     }
 }

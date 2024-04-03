@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.android.serialport2.other.GoogleSerialPort
 import com.android.serialport2.other.SerialPortBase
 import com.android.serialport2.other.VanSerialPort
+import com.android.serialport2.other.toHexString
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -28,6 +29,7 @@ class MainViewModel : ViewModel() {
     fun isOpen(): Boolean = serial?.isOpen() ?: false
 
     fun write(data: ByteArray) {
+        println("${serial?.javaClass}_(${String(data)}):" + data.toHexString())
         serial?.write(data)
     }
 

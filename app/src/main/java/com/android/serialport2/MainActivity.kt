@@ -141,7 +141,7 @@ fun NavContent(
     val scrollState = rememberScrollState()
     val config by configView.uiState.collectAsState(initial = Config())
     val wsConfig by rememberDataSaverState(key = "ws", initialValue = defaultUri)
-    var isSync by rememberDataSaverState(key = "sync", initialValue = true)
+    val isSync by rememberDataSaverState(key = "sync", initialValue = true)
     fun log(message: String) {
         if (!TextUtils.isEmpty(message)) {
             configView.update(log = "${config.log}${message}")
@@ -233,7 +233,7 @@ fun NavContent(
                             val data =
                                 if (config.isHex) config.input.hexToByteArray() else config.input.toByteArray()
                             configView.update(tx = config.tx + data.size)
-                            mainView.write(data)
+                            mainView.write(data)//                   mainView.write(data.add(byteArrayOf(0x0D,0x0A)))
                         } catch (e: Exception) {
                             log("error:${e.message}")
                             e.printStackTrace()
