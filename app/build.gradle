@@ -68,11 +68,11 @@ android {
     buildTypes {
         debug {
             minifyEnabled false
-//            signingConfig signingConfigs.normal
-            signingConfig signingConfigs.system
+            signingConfig signingConfigs.normal
         }
         release {
             minifyEnabled false
+            signingConfig signingConfigs.normal
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
