@@ -176,7 +176,6 @@ fun NavContent(
                 log = ""
             )
             configView.update(rx = config.rx + it.size)
-            scrollState.scrollTo(scrollState.maxValue)
         }
     }
     LaunchedEffect(wsView.uriState) {
@@ -189,10 +188,10 @@ fun NavContent(
                 val data = if (config.isHex) it.hexToByteArray() else it.toByteArray()
                 configView.update(tx = config.tx + data.size)
                 mainView.write(data)
-                scope.launch { scrollState.scrollTo(scrollState.maxValue) }
             })
         }
     }
+    LaunchedEffect(config.log) { scope.launch { scrollState.scrollTo(scrollState.maxValue) } }
     Column(modifier = Modifier.fillMaxSize()) {
         Box(
             modifier = Modifier
