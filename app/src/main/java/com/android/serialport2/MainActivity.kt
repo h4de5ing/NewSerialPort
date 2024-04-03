@@ -54,6 +54,7 @@ import com.android.serialport2.data.UserPreferencesRepository
 import com.android.serialport2.data.UserPreferencesSerializer
 import com.android.serialport2.datastore.UserPreferences
 import com.android.serialport2.other.App.Companion.dataSaverPreferences
+import com.android.serialport2.other.add
 import com.android.serialport2.other.hexToByteArray
 import com.android.serialport2.other.toHexString
 import com.android.serialport2.ui.Config
@@ -126,7 +127,7 @@ fun NavigationDrawer(
 
 @Composable
 fun DrawerContent() {
-    ModalDrawerSheet(drawerShape = RectangleShape, modifier = Modifier.width(180.dp)) {
+    ModalDrawerSheet(drawerShape = RectangleShape, modifier = Modifier.width(200.dp)) {
         ControllerView()
     }
 }
@@ -233,7 +234,14 @@ fun NavContent(
                             val data =
                                 if (config.isHex) config.input.hexToByteArray() else config.input.toByteArray()
                             configView.update(tx = config.tx + data.size)
-                            mainView.write(data)//                   mainView.write(data.add(byteArrayOf(0x0D,0x0A)))
+                            mainView.write(
+                                if (config.x0D0A) data.add(
+                                    byteArrayOf(
+                                        0x0D,
+                                        0x0A
+                                    )
+                                ) else data
+                            )
                         } catch (e: Exception) {
                             log("error:${e.message}")
                             e.printStackTrace()

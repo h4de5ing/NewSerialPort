@@ -176,7 +176,7 @@ fun SpinnerEdit(
         OutlinedTextField(readOnly = readOnly,
             value = value,
             onValueChange = { onValueChange(-1, it) },
-            label = { Text(hint) },
+            label = { Text(text = hint) },
             trailingIcon = {
                 Icon(icon, "contentDescription", Modifier.clickable { expanded = !expanded })
             })

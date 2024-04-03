@@ -62,7 +62,7 @@ fun ControllerView(
     val baudList = stringArrayResource(id = R.array.baud)
     val scope = rememberCoroutineScope()
     val showingDialog = remember { mutableStateOf(false) }
-    var expandSetting = remember { mutableStateOf(false) }
+    val expandSetting = remember { mutableStateOf(false) }
     val sync by ws.sync.collectAsState()
     LaunchedEffect(Unit) {
         var newList = mutableListOf<String>()
@@ -102,6 +102,10 @@ fun ControllerView(
             readOnly = true
         ) { index, _ ->
             configView.update(display = index)
+        }
+        Column {
+            Text(text = "Tx:${config.tx}")
+            Text(text = "Rx:${config.rx}")
         }
         ExpandController(expandSetting, "设置") { expandSetting.value = it }
         if (expandSetting.value) {
@@ -150,10 +154,16 @@ fun ControllerView(
                 Checkbox(checked = config.isGoogle,
                     onCheckedChange = { configView.update(isGoogle = it) })
             }
-        }
-        Column {
-            Text(text = "Tx:${config.tx}")
-            Text(text = "Rx:${config.rx}")
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(text = "0D0A")
+                Checkbox(
+                    checked = config.x0D0A,
+                    onCheckedChange = { configView.update(x0D0A = it) })
+            }
         }
 //        Icon(
 //            painter = painterResource(id = if (sync) R.drawable.baseline_sync_24 else R.drawable.baseline_sync_disabled_24),
@@ -183,10 +193,10 @@ fun ControllerView(
             wsConfig = it
             ws.updateUri(it)
         }
-        Button(
-            onClick = { showingDialog.value = !showingDialog.value },
-            shape = RoundedCornerShape(0.dp)
-        ) { Text(text = "设置") }
+//        Button(
+//            onClick = { showingDialog.value = !showingDialog.value },
+//            shape = RoundedCornerShape(0.dp)
+//        ) { Text(text = "设置") }
     }
 }
 
