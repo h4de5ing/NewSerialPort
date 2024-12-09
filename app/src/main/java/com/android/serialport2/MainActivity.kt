@@ -17,8 +17,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
@@ -227,6 +230,9 @@ fun NavContent(
                         configView.update(input = it)
                     }
                 }
+                Button(onClick = { /*TODO*/ }) {
+                    Text(text = "导入")
+                }
                 Button(
                     onClick = {
                         try {
@@ -267,7 +273,10 @@ fun InputEditText(
         modifier = modifier
             .padding(1.dp)
             .border(width = 1.dp, color = Color.Black, shape = RoundedCornerShape(0.dp)),
-        minLines = 1
+        minLines = 1,
+        leadingIcon = {
+            Icon(imageVector = Icons.Default.Delete, contentDescription = "keyboard")
+        }
     )
 }
 

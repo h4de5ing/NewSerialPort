@@ -39,6 +39,10 @@
         <item>/dev/ttyUSB4</item>
         <item>/dev/ttyUW1</item>
         <item>/dev/ttyUW2</item>
+        <item>/dev/ttysWK0</item>
+        <item>/dev/ttysWK1</item>
+        <item>/dev/ttysWK2</item>
+        <item>/dev/ttysWK3</item>
         <item>/dev/ttySWK1</item>
         <item>/dev/ttySWK2</item>
         <item>/dev/ttySWK3</item>
