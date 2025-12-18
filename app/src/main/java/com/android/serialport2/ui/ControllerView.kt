@@ -86,10 +86,7 @@ fun ControllerView(
             configView.update(dev = it)
         }
         SpinnerEdit(
-            items = baudList.toList(),
-            hint = "波特率",
-            value = config.baud,
-            readOnly = true
+            items = baudList.toList(), hint = "波特率", value = config.baud, readOnly = true
         ) { _, it ->
             configView.update(baud = it)
         }
@@ -128,8 +125,7 @@ fun ControllerView(
             ) {
                 Text(text = "Auto")
                 Checkbox(
-                    checked = config.isAuto,
-                    onCheckedChange = { configView.update(isAuto = it) })
+                    checked = config.isAuto, onCheckedChange = { configView.update(isAuto = it) })
             }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -138,8 +134,7 @@ fun ControllerView(
             ) {
                 Text(text = "Hex")
                 Checkbox(
-                    checked = config.isHex,
-                    onCheckedChange = { configView.update(isHex = it) })
+                    checked = config.isHex, onCheckedChange = { configView.update(isHex = it) })
             }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -149,7 +144,8 @@ fun ControllerView(
                 Text(text = "Google", modifier = Modifier.clickable {
                     configView.update(log = "${config.log}\n${info()}")
                 })
-                Checkbox(checked = config.isGoogle,
+                Checkbox(
+                    checked = config.isGoogle,
                     onCheckedChange = { configView.update(isGoogle = it) })
             }
             Row(
@@ -159,14 +155,9 @@ fun ControllerView(
             ) {
                 Text(text = "0D0A")
                 Checkbox(
-                    checked = config.x0D0A,
-                    onCheckedChange = { configView.update(x0D0A = it) })
+                    checked = config.x0D0A, onCheckedChange = { configView.update(x0D0A = it) })
             }
         }
-//        Icon(
-//            painter = painterResource(id = if (sync) R.drawable.baseline_sync_24 else R.drawable.baseline_sync_disabled_24),
-//            contentDescription = "Data Swap"
-//        )
         Button(
             onClick = { configView.update(tx = 0, rx = 0, log = "") },
             shape = RoundedCornerShape(0.dp)

@@ -185,29 +185,35 @@ fun NavContent(
             )
         }
         Column {
-//            HexInput(onChange = { configView.update(input = "${config.input}${it}") })
             Row(
                 modifier = Modifier
                     .padding(3.dp)
                     .fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                InputEditText(
-                    config.input, modifier = Modifier
-                        .weight(1f)
-                        .padding(5.dp)
-                ) {
-                    if (config.isHex) {
-                        if ("\\A[0-9a-fA-F]+\\z".toRegex().matches(it)) {
+                TextField(
+                    value = config.input,
+                    onValueChange = {
+                        if (config.isHex) {
+                            if ("\\A[0-9a-fA-F]+\\z".toRegex().matches(it)) {
+                                configView.update(input = it)
+                            }
+                        } else {
                             configView.update(input = it)
                         }
-                    } else {
-                        configView.update(input = it)
-                    }
-                }
-                Button(onClick = { /*TODO*/ }) {
-                    Text(text = "导入")
-                }
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(5.dp)
+                        .border(
+                            width = 1.dp,
+                            color = Color.Black,
+                            shape = RoundedCornerShape(0.dp)
+                        ),
+                    minLines = 1,
+                    leadingIcon = {
+                        Icon(imageVector = Icons.Default.Delete, contentDescription = "keyboard")
+                    })
                 Button(
                     onClick = {
                         try {
@@ -233,22 +239,6 @@ fun NavContent(
             }
         }
     }
-}
-
-@Composable
-fun InputEditText(
-    inputValue: String, modifier: Modifier = Modifier, onValueChange: ((String) -> Unit)
-) {
-    TextField(
-        value = inputValue,
-        onValueChange = onValueChange,
-        modifier = modifier
-            .padding(1.dp)
-            .border(width = 1.dp, color = Color.Black, shape = RoundedCornerShape(0.dp)),
-        minLines = 1,
-        leadingIcon = {
-            Icon(imageVector = Icons.Default.Delete, contentDescription = "keyboard")
-        })
 }
 
 @Composable
