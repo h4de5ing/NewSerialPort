@@ -17,10 +17,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ClearAll
 import androidx.compose.material3.Button
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
@@ -38,11 +39,16 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.serialport2.other.App.Companion.dataSaverPreferences
@@ -118,9 +124,24 @@ fun NavContent(
     val config by configView.uiState.collectAsState(initial = Config())
     val wsConfig by rememberDataSaverState(key = "ws", initialValue = defaultUri)
     val isSync by rememberDataSaverState(key = "sync", initialValue = true)
+    var inputField by remember { mutableStateOf(TextFieldValue(config.input)) }
     fun log(message: String) {
         if (!TextUtils.isEmpty(message)) {
             configView.update(log = "${config.log}${message}")
+        }
+    }
+
+    LaunchedEffect(config.isHex) {
+        if (config.isHex) {
+            val formatted = formatHexText(config.input)
+            if (formatted != config.input) configView.update(input = formatted)
+        }
+    }
+
+    LaunchedEffect(config.input) {
+        if (inputField.text != config.input) {
+            inputField =
+                TextFieldValue(text = config.input, selection = TextRange(config.input.length))
         }
     }
     LaunchedEffect(Unit) {
@@ -192,14 +213,15 @@ fun NavContent(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 TextField(
-                    value = config.input,
-                    onValueChange = {
+                    value = inputField,
+                    onValueChange = { incoming ->
                         if (config.isHex) {
-                            if ("\\A[0-9a-fA-F]+\\z".toRegex().matches(it)) {
-                                configView.update(input = it)
-                            }
+                            val next = formatHexTextFieldValue(incoming)
+                            inputField = next
+                            if (next.text != config.input) configView.update(input = next.text)
                         } else {
-                            configView.update(input = it)
+                            inputField = incoming
+                            if (incoming.text != config.input) configView.update(input = incoming.text)
                         }
                     },
                     modifier = Modifier
@@ -211,8 +233,18 @@ fun NavContent(
                             shape = RoundedCornerShape(0.dp)
                         ),
                     minLines = 1,
-                    leadingIcon = {
-                        Icon(imageVector = Icons.Default.Delete, contentDescription = "keyboard")
+                    trailingIcon = {
+                        if (inputField.text.isNotEmpty()) {
+                            IconButton(onClick = {
+                                inputField = TextFieldValue("")
+                                configView.update(input = "")
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Default.ClearAll,
+                                    contentDescription = "clear"
+                                )
+                            }
+                        }
                     })
                 Button(
                     onClick = {
@@ -250,4 +282,29 @@ fun EditText(inputValue: String, modifier: Modifier = Modifier, onValueChange: (
             )
             .padding(3.dp), minLines = 1
     )
+}
+
+private fun Char.isHexDigit(): Boolean =
+    (this in '0'..'9') || (this in 'a'..'f') || (this in 'A'..'F')
+
+private fun formatHexText(raw: String): String {
+    val cleaned = buildString {
+        for (ch in raw) {
+            if (ch.isHexDigit()) append(ch.uppercaseChar())
+        }
+    }
+    if (cleaned.isEmpty()) return ""
+    return cleaned.chunked(2).joinToString(" ")
+}
+
+private fun formatHexTextFieldValue(incoming: TextFieldValue): TextFieldValue {
+    val selectionStart = incoming.selection.start.coerceIn(0, incoming.text.length)
+    val hexCountBeforeCursor = incoming.text
+        .substring(0, selectionStart)
+        .count { it.isHexDigit() }
+
+    val formatted = formatHexText(incoming.text)
+    val spacesBeforeCursor = if (hexCountBeforeCursor <= 1) 0 else (hexCountBeforeCursor - 1) / 2
+    val newCursor = (hexCountBeforeCursor + spacesBeforeCursor).coerceIn(0, formatted.length)
+    return TextFieldValue(text = formatted, selection = TextRange(newCursor))
 }
