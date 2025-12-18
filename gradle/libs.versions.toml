@@ -5,17 +5,13 @@ core-ktx = "1.17.0"
 lifecycle = "2.10.0"
 runtime-livedata = "1.10.0"
 activity-compose = "1.12.1"
-compose-bom = "2025.12.00"
+compose-bom = "2025.12.01"
 compose-material3 = "1.4.0"
 accompanist = "0.37.3"
 datastore = "1.2.0"
 kotlinx-serialization = "1.9.0"
 java-websocket = "1.6.0"
 data-saver-core = "1.2.2"
-
-protoc = "4.33.2"
-protobuf = "4.33.2"
-protobuf-plugin = "0.9.5"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "core-ktx" }
@@ -35,15 +31,13 @@ androidx-compose-runtime-livedata = { group = "androidx.compose.runtime", name =
 accompanist-adaptive = { group = "com.google.accompanist", name = "accompanist-adaptive", version.ref = "accompanist" }
 androidx-datastore = { group = "androidx.datastore", name = "datastore", version.ref = "datastore" }
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
-protobuf-javalite = { group = "com.google.protobuf", name = "protobuf-javalite", version.ref = "protobuf" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 java-websocket = { group = "org.java-websocket", name = "Java-WebSocket", version.ref = "java-websocket" }
 data-saver-core = { group = "io.github.FunnySaltyFish", name = "data-saver-core", version.ref = "data-saver-core" }
-protoc = { group = "com.google.protobuf", name = "protoc", version.ref = "protoc" }
+
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
-google-protobuf = { id = "com.google.protobuf", version.ref = "protobuf-plugin" }
 jetbrains-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 jetbrains-kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

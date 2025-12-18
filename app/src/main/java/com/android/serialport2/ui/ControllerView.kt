@@ -68,9 +68,8 @@ fun ControllerView(
         var newList = mutableListOf<String>()
         try {
             newList = SerialPortFinder().allDevs
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             //configView.update(log = "${config.log}\n枚举失败，请检查【/proc/tty/drivers】权限问题")
-            //e.printStackTrace()
         }
         newList.addAll(context.resources.getStringArray(R.array.node_index).toList())
         val devices = newList.distinct().filter { File(it).exists() }.sorted()

@@ -1,6 +1,5 @@
 package com.android.serialport2
 
-import android.content.Context
 import android.os.Bundle
 import android.text.TextUtils
 import androidx.activity.ComponentActivity
@@ -45,17 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
-import androidx.datastore.core.DataStore
-import androidx.datastore.dataStore
-import androidx.datastore.migrations.SharedPreferencesMigration
-import androidx.datastore.migrations.SharedPreferencesView
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.android.serialport2.data.TasksViewModel
-import com.android.serialport2.data.TasksViewModelFactory
-import com.android.serialport2.data.UserPreferencesRepository
-import com.android.serialport2.data.UserPreferencesSerializer
-import com.android.serialport2.datastore.UserPreferences
 import com.android.serialport2.other.App.Companion.dataSaverPreferences
 import com.android.serialport2.other.add
 import com.android.serialport2.other.hexToByteArray
@@ -73,29 +62,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-private const val USER_PREFERENCES_NAME = "user_preferences"
-private const val DATA_STORE_FILE_NAME = "user_prefs.pb"
-
-private val Context.userPreferencesStore: DataStore<UserPreferences> by dataStore(fileName = DATA_STORE_FILE_NAME,
-    serializer = UserPreferencesSerializer,
-    produceMigrations = { context ->
-        listOf(SharedPreferencesMigration(
-            context, USER_PREFERENCES_NAME
-        ) { _: SharedPreferencesView, currentData: UserPreferences ->
-            currentData
-        })
-    })
 
 class MainActivity : ComponentActivity() {
-    private lateinit var viewModel: TasksViewModel
 
     @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        viewModel = ViewModelProvider(
-            this, TasksViewModelFactory(UserPreferencesRepository(userPreferencesStore))
-        )[TasksViewModel::class.java]
-
         setContent {
             NewSerialPortTheme {
                 Surface(
@@ -242,8 +214,7 @@ fun NavContent(
                             mainView.write(
                                 if (config.x0D0A) data.add(
                                     byteArrayOf(
-                                        0x0D,
-                                        0x0A
+                                        0x0D, 0x0A
                                     )
                                 ) else data
                             )
@@ -263,9 +234,7 @@ fun NavContent(
 
 @Composable
 fun InputEditText(
-    inputValue: String,
-    modifier: Modifier = Modifier,
-    onValueChange: ((String) -> Unit)
+    inputValue: String, modifier: Modifier = Modifier, onValueChange: ((String) -> Unit)
 ) {
     TextField(
         value = inputValue,
@@ -276,8 +245,7 @@ fun InputEditText(
         minLines = 1,
         leadingIcon = {
             Icon(imageVector = Icons.Default.Delete, contentDescription = "keyboard")
-        }
-    )
+        })
 }
 
 @Composable

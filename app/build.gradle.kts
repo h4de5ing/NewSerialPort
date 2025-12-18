@@ -5,7 +5,6 @@ import java.time.format.DateTimeFormatter
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
-    alias(libs.plugins.google.protobuf)
     alias(libs.plugins.jetbrains.kotlin.serialization)
     alias(libs.plugins.jetbrains.kotlin.compose)
 }
@@ -86,7 +85,7 @@ android {
         getByName("debug") {
             isMinifyEnabled = false
             productFlavors.getByName("system").signingConfig = signingConfigs.getByName("system")
-            signingConfig = signingConfigs.getByName("system")
+            signingConfig = signingConfigs.getByName("normal")
         }
         getByName("release") {
             isMinifyEnabled = false
@@ -160,23 +159,7 @@ dependencies {
     implementation(libs.accompanist.adaptive)
     implementation(libs.androidx.datastore)
     implementation(libs.androidx.datastore.preferences)
-    implementation(libs.protobuf.javalite)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.java.websocket)
     implementation(libs.data.saver.core)
-}
-
-protobuf {
-    protoc {
-        artifact = libs.protoc.get().toString()
-    }
-    generateProtoTasks {
-        all().forEach { task ->
-            task.builtins {
-                create("java") {
-                    option("lite")
-                }
-            }
-        }
-    }
 }

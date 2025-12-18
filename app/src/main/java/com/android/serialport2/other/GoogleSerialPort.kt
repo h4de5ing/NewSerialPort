@@ -29,7 +29,7 @@ class GoogleSerialPort(path: String, baudRate: Int, val onChange: (ByteArray) ->
                     }
                 }
             } else onChange("$path NULL".toByteArray())
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             onChange(byteArrayOf(0x66, 0x64, 0x3D, 0x2D, 0x31))
             //e.printStackTrace()
         }

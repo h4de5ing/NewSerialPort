@@ -30,7 +30,6 @@ class VanSerialPort(path: String, baudRate: Int, val onChange: (ByteArray) -> Un
             }
         } catch (e: LastError) {
             onChange(e.toString().toByteArray())
-            //e.printStackTrace()
         }
     }
 
