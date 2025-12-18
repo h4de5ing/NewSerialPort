@@ -55,7 +55,7 @@ fun ControllerView(
     configView: ConfigViewModel = viewModel(),
     ws: WSViewModel = viewModel()
 ) {
-    var wsConfig by rememberDataSaverState(key = "ws", initialValue = "ws://192.168.1.128:1234")
+    var wsConfig by rememberDataSaverState(key = "ws", initialValue = defaultUri)
     val context = LocalContext.current
     val config by configView.uiState.collectAsState(initial = Config())
     val displayList = stringArrayResource(id = R.array.display)
@@ -69,7 +69,6 @@ fun ControllerView(
         try {
             newList = SerialPortFinder().allDevs
         } catch (_: Exception) {
-            //configView.update(log = "${config.log}\n枚举失败，请检查【/proc/tty/drivers】权限问题")
         }
         newList.addAll(context.resources.getStringArray(R.array.node_index).toList())
         val devices = newList.distinct().filter { File(it).exists() }.sorted()
@@ -192,10 +191,10 @@ fun ControllerView(
             wsConfig = it
             ws.updateUri(it)
         }
-//        Button(
-//            onClick = { showingDialog.value = !showingDialog.value },
-//            shape = RoundedCornerShape(0.dp)
-//        ) { Text(text = "设置") }
+        Button(
+            onClick = { showingDialog.value = !showingDialog.value },
+            shape = RoundedCornerShape(0.dp)
+        ) { Text(text = "设置") }
     }
 }
 

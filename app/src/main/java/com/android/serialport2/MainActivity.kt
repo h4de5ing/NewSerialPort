@@ -138,7 +138,10 @@ fun NavContent(
     }
     LaunchedEffect(mainView.serialData) {
         mainView.serialData.collect {
-            if (isSync) wsView.send(String(it))
+            if (isSync && config.isOpen && wsView.isOpen()) {
+                val outbound = if (config.isHex) it.toHexString().uppercase() else String(it)
+                wsView.send(outbound)
+            }
             val show = when (config.display) {
                 0, 2 -> it.toHexString().uppercase()
                 1, 3 -> String(it)
@@ -153,17 +156,17 @@ fun NavContent(
             configView.update(rx = config.rx + it.size)
         }
     }
-    LaunchedEffect(wsView.uriState) {
-        wsView.uriState.collect { uri ->
-            var newUri = wsConfig
-            if (!TextUtils.isEmpty(uri)) newUri = wsView.uriState.value
-            if (wsView.isOpen()) wsView.close()
-            wsView.start(newUri, onChange = {
-                configView.update(log = "${config.log}\n${it}")
-                val data = if (config.isHex) it.hexToByteArray() else it.toByteArray()
+    LaunchedEffect(config.isOpen, isSync, wsConfig) {
+        if (config.isOpen && isSync) {
+            wsView.start(wsConfig, onChange = { msg ->
+                configView.update(log = "${config.log}\n${msg}")
+                val base = if (config.isHex) msg.hexToByteArray() else msg.toByteArray()
+                val data = if (config.x0D0A) base.add(byteArrayOf(0x0D, 0x0A)) else base
                 configView.update(tx = config.tx + data.size)
                 mainView.write(data)
             })
+        } else {
+            if (wsView.isOpen()) wsView.close()
         }
     }
     LaunchedEffect(config.log) { scope.launch { scrollState.scrollTo(scrollState.maxValue) } }
