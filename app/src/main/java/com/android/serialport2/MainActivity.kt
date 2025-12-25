@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,6 +20,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ClearAll
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material3.Button
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
@@ -25,10 +28,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PermanentNavigationDrawer
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.WindowSizeClass
@@ -45,6 +48,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.TextRange
@@ -59,6 +63,7 @@ import com.android.serialport2.ui.Config
 import com.android.serialport2.ui.ConfigViewModel
 import com.android.serialport2.ui.ControllerView
 import com.android.serialport2.ui.MainViewModel
+import com.android.serialport2.ui.TextInputHistorySheet
 import com.android.serialport2.ui.WSViewModel
 import com.android.serialport2.ui.defaultUri
 import com.android.serialport2.ui.theme.NewSerialPortTheme
@@ -124,6 +129,7 @@ fun NavContent(
     val config by configView.uiState.collectAsState(initial = Config())
     val wsConfig by rememberDataSaverState(key = "ws", initialValue = defaultUri)
     val isSync by rememberDataSaverState(key = "sync", initialValue = true)
+    var showTextInputHistorySheet by remember { mutableStateOf(false) }
     var inputField by remember { mutableStateOf(TextFieldValue(config.input)) }
     fun log(message: String) {
         if (!TextUtils.isEmpty(message)) {
@@ -191,6 +197,18 @@ fun NavContent(
         }
     }
     LaunchedEffect(config.log) { scope.launch { scrollState.scrollTo(scrollState.maxValue) } }
+    // A bottom sheet to show the text input history to pick from.
+    if (showTextInputHistorySheet) {
+        val textInputHistory = listOf("历史记录1", "历史记录2", "历史记录3")
+        TextInputHistorySheet(
+            history = textInputHistory,
+            onDismissed = { showTextInputHistorySheet = false },
+            onHistoryItemClicked = { item ->
+            },
+            onHistoryItemDeleted = { item -> },
+            onHistoryItemsDeleteAll = { },
+        )
+    }
     Column(modifier = Modifier.fillMaxSize()) {
         Box(
             modifier = Modifier
@@ -212,7 +230,7 @@ fun NavContent(
                     .fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                TextField(
+                OutlinedTextField(
                     value = inputField,
                     onValueChange = { incoming ->
                         if (config.isHex) {
@@ -233,6 +251,21 @@ fun NavContent(
                             shape = RoundedCornerShape(0.dp)
                         ),
                     minLines = 1,
+                    leadingIcon = {
+                        IconButton(
+//                            enabled = !inProgress && !isResettingSession,
+                            onClick = { showTextInputHistorySheet = true },
+                            modifier = Modifier
+                                .offset(x = 16.dp)
+                                .alpha(0.8f),
+                        ) {
+                            Icon(
+                                Icons.Rounded.Add,
+                                contentDescription = "cd_add_content_icon",
+                                modifier = Modifier.size(28.dp),
+                            )
+                        }
+                    },
                     trailingIcon = {
                         if (inputField.text.isNotEmpty()) {
                             IconButton(onClick = {
