@@ -164,6 +164,7 @@ fun MySpinner(
 
 @Composable
 fun SpinnerEdit(
+    modifier: Modifier = Modifier.width(200.dp),
     readOnly: Boolean = false,
     hint: String = "",
     value: String,
@@ -172,15 +173,17 @@ fun SpinnerEdit(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val icon = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown
-    Box(modifier = Modifier.width(200.dp)) {
-        OutlinedTextField(readOnly = readOnly,
+    Box(modifier = modifier) {
+        OutlinedTextField(
+            modifier = Modifier.fillMaxWidth(),
+            readOnly = readOnly,
             value = value,
             onValueChange = { onValueChange(-1, it) },
             label = { Text(text = hint) },
             trailingIcon = {
                 Icon(icon, "contentDescription", Modifier.clickable { expanded = !expanded })
             })
-        DropdownMenu(offset = DpOffset(100.dp, 0.dp),
+        DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false }) {
             items.forEachIndexed { index, label ->

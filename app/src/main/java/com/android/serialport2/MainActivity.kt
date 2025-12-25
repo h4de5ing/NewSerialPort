@@ -6,6 +6,8 @@ import android_serialport_api.SerialPortFinder
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,31 +16,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Send
-import androidx.compose.material.icons.filled.ClearAll
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.PermanentNavigationDrawer
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberDrawerState
-import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
-import androidx.compose.material3.windowsizeclass.WindowSizeClass
-import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
-import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -51,21 +43,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.android.serialport2.R
 import com.android.serialport2.other.App.Companion.dataSaverPreferences
 import com.android.serialport2.other.add
 import com.android.serialport2.other.hexToByteArray
 import com.android.serialport2.other.toHexString
 import com.android.serialport2.ui.Config
 import com.android.serialport2.ui.ConfigViewModel
-import com.android.serialport2.ui.ControllerView
 import com.android.serialport2.ui.MainViewModel
+import com.android.serialport2.ui.SettingsDialog
 import com.android.serialport2.ui.TextInputHistorySheet
 import com.android.serialport2.ui.WSViewModel
 import com.android.serialport2.ui.defaultUri
@@ -79,8 +70,6 @@ import java.io.File
 
 
 class MainActivity : ComponentActivity() {
-
-    @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -89,36 +78,11 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
                 ) {
                     CompositionLocalProvider(LocalDataSaver provides dataSaverPreferences) {
-                        NavigationDrawer(calculateWindowSizeClass(this)) { NavContent() }
+                        NavContent()
                     }
                 }
             }
         }
-    }
-}
-
-@Composable
-fun NavigationDrawer(
-    windowSizeClass: WindowSizeClass, content: @Composable () -> Unit
-) {
-    val windowWidthSizeClass = windowSizeClass.widthSizeClass
-    if (windowWidthSizeClass == WindowWidthSizeClass.Compact) {
-        val drawerState = rememberDrawerState(DrawerValue.Closed)
-        ModalNavigationDrawer(drawerState = drawerState, drawerContent = { DrawerContent() }) {
-            Column {
-                Text(text = "向右滑打开控制菜单")
-                content()
-            }
-        }
-    } else {
-        PermanentNavigationDrawer(drawerContent = { DrawerContent() }) { content() }
-    }
-}
-
-@Composable
-fun DrawerContent() {
-    ModalDrawerSheet(drawerShape = RectangleShape, modifier = Modifier.width(200.dp)) {
-        ControllerView()
     }
 }
 
@@ -135,6 +99,7 @@ fun NavContent(
     val wsConfig by rememberDataSaverState(key = "ws", initialValue = defaultUri)
     val isSync by rememberDataSaverState(key = "sync", initialValue = true)
     var showTextInputHistorySheet by remember { mutableStateOf(false) }
+    val showingSettingsDialog = remember { mutableStateOf(false) }
     var inputField by remember { mutableStateOf(TextFieldValue(config.input)) }
     fun log(message: String) {
         if (!TextUtils.isEmpty(message)) {
@@ -158,7 +123,8 @@ fun NavContent(
 
     LaunchedEffect(Unit) {
         val devices = runCatching {
-            val finderDevices = runCatching { SerialPortFinder().allDevs }.getOrDefault(mutableListOf())
+            val finderDevices =
+                runCatching { SerialPortFinder().allDevs }.getOrDefault(mutableListOf())
             val fallback = context.resources.getStringArray(R.array.node_index).toList()
             (finderDevices + fallback)
                 .distinct()
@@ -227,12 +193,53 @@ fun NavContent(
             history = textInputHistory,
             onDismissed = { showTextInputHistorySheet = false },
             onHistoryItemClicked = { item ->
+                inputField = TextFieldValue(text = item, selection = TextRange(item.length))
             },
             onHistoryItemDeleted = { item -> },
             onHistoryItemsDeleteAll = { },
         )
     }
     Column(modifier = Modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(5.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            IconButton(onClick = { showingSettingsDialog.value = true }) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "History",
+                )
+            }
+            Button(
+                onClick = {
+                    if (!config.isOpen) {
+                        try {
+                            mainView.setupSerial(
+                                path = config.dev,
+                                baudRate = config.baud.toInt(),
+                                isGoogle = config.isGoogle
+                            )
+                        } catch (e: Exception) {
+                            configView.update(log = "${config.log}打开异常:${e.message}\n")
+                        }
+                    } else {
+                        mainView.close()
+                    }
+                    configView.update(isOpen = mainView.isOpen())
+                },
+                shape = RoundedCornerShape(2.dp),
+            ) {
+                Text(text = if (config.isOpen) "关闭" else "打开")
+            }
+            Text(
+                text = "清空",
+                fontSize = 14.sp,
+                modifier = Modifier.clickable { configView.update(tx = 0, rx = 0, log = "") })
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -245,6 +252,16 @@ fun NavContent(
                     .fillMaxSize()
                     .verticalScroll(scrollState)
             )
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(text = "Tx:${config.tx}", modifier = Modifier.padding(end = 12.dp))
+            Text(text = "Rx:${config.rx}")
         }
         Column {
             Row(
@@ -313,18 +330,8 @@ fun NavContent(
                 }
             }
         }
+        SettingsDialog(showingDialog = showingSettingsDialog, configView = configView, ws = wsView)
     }
-}
-
-@Composable
-fun EditText(inputValue: String, modifier: Modifier = Modifier, onValueChange: ((String) -> Unit)) {
-    BasicTextField(
-        value = inputValue, onValueChange = onValueChange, modifier = modifier
-            .border(
-                width = 0.5.dp, color = Color.Black, shape = RoundedCornerShape(1.dp)
-            )
-            .padding(3.dp), minLines = 1
-    )
 }
 
 private fun Char.isHexDigit(): Boolean =
