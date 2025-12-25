@@ -4,9 +4,13 @@ import android.text.TextUtils
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import org.java_websocket.WebSocket
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.drafts.Draft_6455
 import org.java_websocket.handshake.ServerHandshake
+import org.java_websocket.handshake.ClientHandshake
+import org.java_websocket.server.WebSocketServer
+import java.net.InetSocketAddress
 import java.net.URI
 
 const val defaultUri = "ws://10.18.16.247:8086"
@@ -18,6 +22,11 @@ class WSViewModel : ViewModel() {
     val uriState: StateFlow<String> = _uriState
     private val _sync = MutableStateFlow(false)
     val sync: StateFlow<Boolean> = _sync
+
+    private var server: WebSocketServer? = null
+    private var serverPort: Int? = null
+    private val _serverRunning = MutableStateFlow(false)
+    val serverRunning: StateFlow<Boolean> = _serverRunning
 
     fun updateUri(uri: String) {
         _uriState.value = uri
@@ -75,6 +84,67 @@ class WSViewModel : ViewModel() {
         }
     }
 
+    fun startServer(port: Int, onMessage: (String) -> Unit) {
+        if (port !in 1..65535) return
+        if (server != null && _serverRunning.value && serverPort == port) return
+
+        stopServer()
+
+        try {
+            serverPort = port
+            server = object : WebSocketServer(InetSocketAddress(port)) {
+                override fun onStart() {
+                    _serverRunning.value = true
+                }
+
+                override fun onOpen(conn: WebSocket, handshake: ClientHandshake) {
+                    // no-op
+                }
+
+                override fun onClose(conn: WebSocket, code: Int, reason: String, remote: Boolean) {
+                    // no-op
+                }
+
+                override fun onMessage(conn: WebSocket, message: String) {
+                    if (!TextUtils.isEmpty(message)) onMessage(message)
+                }
+
+                override fun onError(conn: WebSocket?, ex: Exception) {
+                    ex.printStackTrace()
+                }
+            }
+            server?.start()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            server = null
+            serverPort = null
+            _serverRunning.value = false
+        }
+    }
+
+    fun stopServer() {
+        try {
+            val s = server
+            if (s != null) {
+                runCatching { s.stop(500) }
+            }
+        } catch (_: Exception) {
+        } finally {
+            server = null
+            serverPort = null
+            _serverRunning.value = false
+        }
+    }
+
+    fun isServerRunning(): Boolean = server != null && _serverRunning.value
+
+    fun broadcast(msg: String) {
+        if (msg.isEmpty()) return
+        val s = server ?: return
+        if (!_serverRunning.value) return
+        runCatching { s.broadcast(msg) }
+    }
+
     fun send(msg: String) {
         if (client?.isOpen == true) {
             try {
@@ -82,5 +152,11 @@ class WSViewModel : ViewModel() {
             } catch (_: Exception) {
             }
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        close()
+        stopServer()
     }
 }

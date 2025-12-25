@@ -23,6 +23,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -97,13 +99,16 @@ fun NavContent(
     val context = LocalContext.current
     val config by configView.uiState.collectAsState(initial = Config())
     val wsConfig by rememberDataSaverState(key = "ws", initialValue = defaultUri)
-    val isSync by rememberDataSaverState(key = "sync", initialValue = true)
+    val isSync by rememberDataSaverState(key = "sync", initialValue = false)
+    val wsServerEnabled by rememberDataSaverState(key = "ws_server_enabled", initialValue = false)
+    val wsServerPort by rememberDataSaverState(key = "ws_server_port", initialValue = 8086)
     var showTextInputHistorySheet by remember { mutableStateOf(false) }
     val showingSettingsDialog = remember { mutableStateOf(false) }
     var inputField by remember { mutableStateOf(TextFieldValue(config.input)) }
     fun log(message: String) {
         if (!TextUtils.isEmpty(message)) {
-            configView.update(log = "${config.log}${message}")
+            val current = configView.uiState.value
+            configView.update(log = "${current.log}${message}")
         }
     }
 
@@ -154,11 +159,16 @@ fun NavContent(
     }
     LaunchedEffect(mainView.serialData) {
         mainView.serialData.collect {
-            if (isSync && config.isOpen && wsView.isOpen()) {
-                val outbound = if (config.isHex) it.toHexString().uppercase() else String(it)
+            val current = configView.uiState.value
+            if (isSync && current.isOpen && wsView.isOpen()) {
+                val outbound = if (current.isHex) it.toHexString().uppercase() else String(it)
                 wsView.send(outbound)
             }
-            val show = when (config.display) {
+            if (wsServerEnabled && current.isOpen && wsView.isServerRunning()) {
+                val outbound = if (current.isHex) it.toHexString().uppercase() else String(it)
+                wsView.broadcast(outbound)
+            }
+            val show = when (current.display) {
                 0, 2 -> it.toHexString().uppercase()
                 1, 3 -> String(it)
                 4 -> "${it.toHexString().uppercase()}\n"
@@ -166,23 +176,41 @@ fun NavContent(
                 else -> ""
             }
             log(show)
-            if ((config.display == 2 || config.display == 3) && config.log.length >= 10000) configView.update(
+            if ((current.display == 2 || current.display == 3) && current.log.length >= 10000) configView.update(
                 log = ""
             )
-            configView.update(rx = config.rx + it.size)
+            configView.update(rx = current.rx + it.size)
         }
     }
     LaunchedEffect(config.isOpen, isSync, wsConfig) {
         if (config.isOpen && isSync) {
             wsView.start(wsConfig, onChange = { msg ->
-                configView.update(log = "${config.log}\n${msg}")
-                val base = if (config.isHex) msg.hexToByteArray() else msg.toByteArray()
-                val data = if (config.x0D0A) base.add(byteArrayOf(0x0D, 0x0A)) else base
-                configView.update(tx = config.tx + data.size)
+                val current = configView.uiState.value
+                configView.update(log = "${current.log}\n${msg}")
+                val base = if (current.isHex) msg.hexToByteArray() else msg.toByteArray()
+                val data = if (current.x0D0A) base.add(byteArrayOf(0x0D, 0x0A)) else base
+                configView.update(tx = current.tx + data.size)
                 mainView.write(data)
             })
         } else {
             if (wsView.isOpen()) wsView.close()
+        }
+    }
+
+    LaunchedEffect(wsServerEnabled, wsServerPort) {
+        if (wsServerEnabled) {
+            wsView.startServer(wsServerPort) { msg ->
+                val current = configView.uiState.value
+                configView.update(log = "${current.log}\n${msg}")
+                if (current.isOpen) {
+                    val base = if (current.isHex) msg.hexToByteArray() else msg.toByteArray()
+                    val data = if (current.x0D0A) base.add(byteArrayOf(0x0D, 0x0A)) else base
+                    configView.update(tx = current.tx + data.size)
+                    mainView.write(data)
+                }
+            }
+        } else {
+            if (wsView.isServerRunning()) wsView.stopServer()
         }
     }
     LaunchedEffect(config.log) { scope.launch { scrollState.scrollTo(scrollState.maxValue) } }
@@ -213,7 +241,7 @@ fun NavContent(
                     contentDescription = "History",
                 )
             }
-            Button(
+            IconButton(
                 onClick = {
                     if (!config.isOpen) {
                         try {
@@ -230,9 +258,11 @@ fun NavContent(
                     }
                     configView.update(isOpen = mainView.isOpen())
                 },
-                shape = RoundedCornerShape(2.dp),
             ) {
-                Text(text = if (config.isOpen) "关闭" else "打开")
+                Icon(
+                    imageVector = if (config.isOpen) Icons.Rounded.Stop else Icons.Rounded.PlayArrow,
+                    contentDescription = if (config.isOpen) "Close" else "Open",
+                )
             }
             Text(
                 text = "清空",

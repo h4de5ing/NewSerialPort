@@ -36,6 +36,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.serialport2.BuildConfig
 import com.android.serialport2.R
 import com.funny.data_saver.core.rememberDataSaverState
+import java.net.Inet4Address
+import java.net.NetworkInterface
 
 @Composable
 fun SettingsDialog(
@@ -50,7 +52,9 @@ fun SettingsDialog(
     val displayList = stringArrayResource(id = R.array.display)
 
     var wsUri by rememberDataSaverState(key = "ws", initialValue = defaultUri)
-    var isSync by rememberDataSaverState(key = "sync", initialValue = true)
+    var wsClientEnabled by rememberDataSaverState(key = "sync", initialValue = false)
+    var wsServerEnabled by rememberDataSaverState(key = "ws_server_enabled", initialValue = false)
+    var wsServerPort by rememberDataSaverState(key = "ws_server_port", initialValue = 8086)
 
     val focusManager = LocalFocusManager.current
     val interactionSource = remember { MutableInteractionSource() }
@@ -140,7 +144,8 @@ fun SettingsDialog(
                                     .border(
                                         width = 1.dp,
                                         color = MaterialTheme.colorScheme.outline,
-                                    ).width(120.dp),
+                                    )
+                                    .width(120.dp),
                                 contentAlignment = Alignment.CenterStart,
                             ) {
                                 OutlinedTextField(value = "${config.delayTime}", onValueChange = {
@@ -157,8 +162,7 @@ fun SettingsDialog(
                             )
                         }
                         ToggleRow(
-                            title = "Hex",
-                            checked = config.isHex
+                            title = "Hex", checked = config.isHex
                         ) { configView.update(isHex = it) }
                         ToggleRow(title = "Google", checked = config.isGoogle) {
                             configView.update(
@@ -166,22 +170,50 @@ fun SettingsDialog(
                             )
                         }
                         ToggleRow(
-                            title = "0D0A",
-                            checked = config.x0D0A
+                            title = "0D0A", checked = config.x0D0A
                         ) { configView.update(x0D0A = it) }
                     }
 
-                    SettingsSection(title = "消息转发") {
-                        SpinnerEdit(
-                            modifier = Modifier.fillMaxWidth(),
-                            readOnly = false,
-                            hint = "websocket 地址",
-                            value = wsUri,
-                            items = emptyList(),
-                        ) { _, v ->
-                            wsUri = v
+                    SettingsSection(title = "WebSocket") {
+                        ToggleRow(title = "WS客户端", checked = wsClientEnabled) {
+                            wsClientEnabled = it
+                            if (!it) ws.close()
                         }
-                        ToggleRow(title = "消息转发", checked = isSync) { isSync = it }
+                        OutlinedTextField(
+                            modifier = Modifier.fillMaxWidth(),
+                            value = wsUri,
+                            enabled = wsClientEnabled,
+                            onValueChange = { wsUri = it },
+                            label = { Text(text = "WS 地址") },
+                            singleLine = true,
+                        )
+
+                        ToggleRow(title = "WS服务端", checked = wsServerEnabled) {
+                            wsServerEnabled = it
+                        }
+                        if (wsServerEnabled) {
+                            val ip = remember { getLocalIpAddress() }
+                            Text(
+                                text = "本机IP: ${ip.ifBlank { "未知" }}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            OutlinedTextField(
+                                modifier = Modifier.fillMaxWidth(),
+                                value = wsServerPort.toString(),
+                                onValueChange = { raw ->
+                                    val trimmed = raw.trim()
+                                    if (trimmed.isEmpty()) return@OutlinedTextField
+                                    if (!"^[0-9]{1,5}$".toRegex()
+                                            .matches(trimmed)
+                                    ) return@OutlinedTextField
+                                    val p = trimmed.toIntOrNull() ?: return@OutlinedTextField
+                                    if (p in 1..65535) wsServerPort = p
+                                },
+                                label = { Text(text = "端口") },
+                                singleLine = true,
+                            )
+                        }
                     }
                 }
 
@@ -233,5 +265,17 @@ private fun ToggleRow(
     ) {
         Text(text = title)
         Switch(checked = checked, onCheckedChange = onCheckedChange)
+    }
+}
+
+private fun getLocalIpAddress(): String {
+    return try {
+        val interfaces = NetworkInterface.getNetworkInterfaces()?.toList().orEmpty()
+        interfaces.asSequence().filter { it.isUp && !it.isLoopback }
+            .flatMap { it.inetAddresses.toList().asSequence() }.filterIsInstance<Inet4Address>()
+            .map { it.hostAddress ?: "" }.firstOrNull { it.isNotBlank() && it != "127.0.0.1" }
+            .orEmpty()
+    } catch (_: Exception) {
+        ""
     }
 }
