@@ -25,7 +25,6 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Stop
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -51,6 +50,9 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.android.serialport2.data.db.IoDirection
+import com.android.serialport2.data.db.IoSource
+import com.android.serialport2.data.db.SerialIoRepository
 import com.android.serialport2.other.App.Companion.dataSaverPreferences
 import com.android.serialport2.other.add
 import com.android.serialport2.other.hexToByteArray
@@ -97,6 +99,7 @@ fun NavContent(
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
     val context = LocalContext.current
+    val ioRepo = remember(context) { SerialIoRepository.getInstance(context) }
     val config by configView.uiState.collectAsState(initial = Config())
     val wsConfig by rememberDataSaverState(key = "ws", initialValue = defaultUri)
     val isSync by rememberDataSaverState(key = "sync", initialValue = false)
@@ -131,10 +134,7 @@ fun NavContent(
             val finderDevices =
                 runCatching { SerialPortFinder().allDevs }.getOrDefault(mutableListOf())
             val fallback = context.resources.getStringArray(R.array.node_index).toList()
-            (finderDevices + fallback)
-                .distinct()
-                .filter { File(it).exists() }
-                .sorted()
+            (finderDevices + fallback).distinct().filter { File(it).exists() }.sorted()
         }.getOrDefault(emptyList())
 
         if (devices.isNotEmpty()) {
@@ -151,6 +151,7 @@ fun NavContent(
                     val data =
                         if (config.isHex) config.input.hexToByteArray() else config.input.toByteArray()
                     mainView.write(data)
+                    ioRepo.insertAsync(IoDirection.TX, IoSource.INPUT_FIELD, data)
                     configView.update(tx = config.tx + data.size)
                     delay(config.delayTime.toLong())
                 }
@@ -159,6 +160,7 @@ fun NavContent(
     }
     LaunchedEffect(mainView.serialData) {
         mainView.serialData.collect {
+            ioRepo.insertAsync(IoDirection.RX, IoSource.SERIAL_RAW, it)
             val current = configView.uiState.value
             if (isSync && current.isOpen && wsView.isOpen()) {
                 val outbound = if (current.isHex) it.toHexString().uppercase() else String(it)
@@ -189,6 +191,7 @@ fun NavContent(
                 configView.update(log = "${current.log}\n${msg}")
                 val base = if (current.isHex) msg.hexToByteArray() else msg.toByteArray()
                 val data = if (current.x0D0A) base.add(byteArrayOf(0x0D, 0x0A)) else base
+                ioRepo.insertAsync(IoDirection.TX, IoSource.WS_CLIENT, data)
                 configView.update(tx = current.tx + data.size)
                 mainView.write(data)
             })
@@ -205,6 +208,7 @@ fun NavContent(
                 if (current.isOpen) {
                     val base = if (current.isHex) msg.hexToByteArray() else msg.toByteArray()
                     val data = if (current.x0D0A) base.add(byteArrayOf(0x0D, 0x0A)) else base
+                    ioRepo.insertAsync(IoDirection.TX, IoSource.WS_SERVER, data)
                     configView.update(tx = current.tx + data.size)
                     mainView.write(data)
                 }
@@ -330,20 +334,16 @@ fun NavContent(
                     })
                 if (inputField.text.isNotEmpty() && config.isOpen) {
                     IconButton(
-                        colors =
-                            IconButtonDefaults.iconButtonColors(containerColor = Color.Blue),
+                        colors = IconButtonDefaults.iconButtonColors(containerColor = Color.Blue),
                         onClick = {
                             try {
                                 val data =
                                     if (config.isHex) config.input.hexToByteArray() else config.input.toByteArray()
-                                configView.update(tx = config.tx + data.size)
-                                mainView.write(
-                                    if (config.x0D0A) data.add(
-                                        byteArrayOf(
-                                            0x0D, 0x0A
-                                        )
-                                    ) else data
-                                )
+                                val writeData =
+                                    if (config.x0D0A) data.add(byteArrayOf(0x0D, 0x0A)) else data
+                                ioRepo.insertAsync(IoDirection.TX, IoSource.INPUT_FIELD, writeData)
+                                configView.update(tx = config.tx + writeData.size)
+                                mainView.write(writeData)
                             } catch (e: Exception) {
                                 log("error:${e.message}")
                                 e.printStackTrace()
@@ -379,9 +379,7 @@ private fun formatHexText(raw: String): String {
 
 private fun formatHexTextFieldValue(incoming: TextFieldValue): TextFieldValue {
     val selectionStart = incoming.selection.start.coerceIn(0, incoming.text.length)
-    val hexCountBeforeCursor = incoming.text
-        .substring(0, selectionStart)
-        .count { it.isHexDigit() }
+    val hexCountBeforeCursor = incoming.text.substring(0, selectionStart).count { it.isHexDigit() }
 
     val formatted = formatHexText(incoming.text)
     val spacesBeforeCursor = if (hexCountBeforeCursor <= 1) 0 else (hexCountBeforeCursor - 1) / 2

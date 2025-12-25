@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.jetbrains.kotlin.serialization)
     alias(libs.plugins.jetbrains.kotlin.compose)
+    alias(libs.plugins.ksp)
 }
 abstract class CommandRunner @Inject constructor(private val execOps: ExecOperations) {
     fun runCommand(command: List<String>): String {
@@ -163,4 +164,9 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.java.websocket)
     implementation(libs.data.saver.core)
+
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+    debugImplementation(libs.glance)
 }
