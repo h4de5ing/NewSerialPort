@@ -84,8 +84,10 @@ android {
     buildTypes {
         getByName("debug") {
             isMinifyEnabled = false
-            productFlavors.getByName("system").signingConfig = signingConfigs.getByName("system")
-            signingConfig = signingConfigs.getByName("normal")
+            signingConfig = when (android.productFlavors.find { it.name == "system" }?.name) {
+                "system" -> signingConfigs.getByName("system")
+                else -> signingConfigs.getByName("normal")
+            }
         }
         getByName("release") {
             isMinifyEnabled = false

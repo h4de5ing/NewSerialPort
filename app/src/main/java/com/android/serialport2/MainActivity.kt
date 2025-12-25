@@ -19,12 +19,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.filled.ClearAll
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material3.Button
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
@@ -48,7 +49,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.TextRange
@@ -232,6 +232,7 @@ fun NavContent(
             ) {
                 OutlinedTextField(
                     value = inputField,
+                    label = { Text("请输入") },
                     onValueChange = { incoming ->
                         if (config.isHex) {
                             val next = formatHexTextFieldValue(incoming)
@@ -244,20 +245,11 @@ fun NavContent(
                     },
                     modifier = Modifier
                         .weight(1f)
-                        .padding(5.dp)
-                        .border(
-                            width = 1.dp,
-                            color = Color.Black,
-                            shape = RoundedCornerShape(0.dp)
-                        ),
+                        .padding(5.dp),
                     minLines = 1,
                     leadingIcon = {
                         IconButton(
-//                            enabled = !inProgress && !isResettingSession,
                             onClick = { showTextInputHistorySheet = true },
-                            modifier = Modifier
-                                .offset(x = 16.dp)
-                                .alpha(0.8f),
                         ) {
                             Icon(
                                 Icons.Rounded.Add,
@@ -265,42 +257,37 @@ fun NavContent(
                                 modifier = Modifier.size(28.dp),
                             )
                         }
-                    },
-                    trailingIcon = {
-                        if (inputField.text.isNotEmpty()) {
-                            IconButton(onClick = {
-                                inputField = TextFieldValue("")
-                                configView.update(input = "")
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Default.ClearAll,
-                                    contentDescription = "clear"
-                                )
-                            }
-                        }
                     })
-                Button(
-                    onClick = {
-                        try {
-                            val data =
-                                if (config.isHex) config.input.hexToByteArray() else config.input.toByteArray()
-                            configView.update(tx = config.tx + data.size)
-                            mainView.write(
-                                if (config.x0D0A) data.add(
-                                    byteArrayOf(
-                                        0x0D, 0x0A
-                                    )
-                                ) else data
-                            )
-                        } catch (e: Exception) {
-                            log("error:${e.message}")
-                            e.printStackTrace()
-                        }
-                    },
-                    shape = RoundedCornerShape(0.dp),
-                    modifier = Modifier.padding(3.dp),
-                    enabled = config.isOpen
-                ) { Text(text = "发送") }
+                if (inputField.text.isNotEmpty() && config.isOpen) {
+                    IconButton(
+                        colors =
+                            IconButtonDefaults.iconButtonColors(containerColor = Color.Blue),
+                        onClick = {
+                            try {
+                                val data =
+                                    if (config.isHex) config.input.hexToByteArray() else config.input.toByteArray()
+                                configView.update(tx = config.tx + data.size)
+                                mainView.write(
+                                    if (config.x0D0A) data.add(
+                                        byteArrayOf(
+                                            0x0D, 0x0A
+                                        )
+                                    ) else data
+                                )
+                            } catch (e: Exception) {
+                                log("error:${e.message}")
+                                e.printStackTrace()
+                            }
+                        },
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Rounded.Send,
+                            contentDescription = "send",
+                            modifier = Modifier.offset(x = 2.dp),
+                            tint = Color.White,
+                        )
+                    }
+                }
             }
         }
     }

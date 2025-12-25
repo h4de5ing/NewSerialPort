@@ -1,8 +1,8 @@
 # Android SerialPort 串口库，UI采用Android Compose
 
-
 ## TODO
-- 增加WebSocket+HTTP服务端，可以在远程前端操作访问你
+
+- 设置选项，分Websocket客户端配置，Websocket服务端配置
 - 远程打开任意个指定串口数据并通信
 - 数据序列化与反序列化
 - 串口文件导入命令
