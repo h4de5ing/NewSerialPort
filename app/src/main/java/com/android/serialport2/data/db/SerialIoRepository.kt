@@ -11,6 +11,16 @@ class SerialIoRepository private constructor(context: Context) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     fun insertAsync(direction: IoDirection, source: IoSource, data: ByteArray) {
+        insertAsync(direction = direction, source = source, data = data, success = true, note = null)
+    }
+
+    fun insertAsync(
+        direction: IoDirection,
+        source: IoSource,
+        data: ByteArray,
+        success: Boolean,
+        note: String?,
+    ) {
         if (data.isEmpty()) return
         val copy = data.copyOf()
         val now = System.currentTimeMillis()
@@ -21,6 +31,8 @@ class SerialIoRepository private constructor(context: Context) {
                     direction = direction.code,
                     source = source.code,
                     data = copy,
+                    success = success,
+                    note = note,
                 ),
             )
         }

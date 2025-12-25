@@ -34,6 +34,12 @@ data class SerialIoRecord(
 
     @ColumnInfo(name = "data")
     val data: ByteArray,
+
+    @ColumnInfo(name = "success")
+    val success: Boolean = true,
+
+    @ColumnInfo(name = "note")
+    val note: String? = null,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -46,6 +52,8 @@ data class SerialIoRecord(
         if (direction != other.direction) return false
         if (source != other.source) return false
         if (!data.contentEquals(other.data)) return false
+        if (success != other.success) return false
+        if (note != other.note) return false
 
         return true
     }
@@ -56,6 +64,8 @@ data class SerialIoRecord(
         result = 31 * result + direction
         result = 31 * result + source
         result = 31 * result + data.contentHashCode()
+        result = 31 * result + success.hashCode()
+        result = 31 * result + (note?.hashCode() ?: 0)
         return result
     }
 }

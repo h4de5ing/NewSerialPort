@@ -108,6 +108,32 @@ fun NavContent(
     var showTextInputHistorySheet by remember { mutableStateOf(false) }
     val showingSettingsDialog = remember { mutableStateOf(false) }
     var inputField by remember { mutableStateOf(TextFieldValue(config.input)) }
+
+    fun formatForDisplay(bytes: ByteArray, displayMode: Int): String {
+        return when (displayMode) {
+            0, 2 -> bytes.toHexString().uppercase()
+            1, 3 -> String(bytes)
+            4 -> "${bytes.toHexString().uppercase()}\n"
+            5 -> "${String(bytes)}\n"
+            else -> ""
+        }
+    }
+
+    fun appendIoLog(tag: String, bytes: ByteArray) {
+        if (bytes.isEmpty()) return
+        val current = configView.uiState.value
+        val payload = formatForDisplay(bytes, current.display)
+        if (payload.isEmpty()) return
+        val entry = "$tag $payload"
+        val toAppend = if (entry.endsWith("\n")) entry else "$entry\n"
+        configView.update(log = "${current.log}${toAppend}")
+
+        val after = configView.uiState.value
+        if ((after.display == 2 || after.display == 3) && after.log.length >= 10000) {
+            configView.update(log = "")
+        }
+    }
+
     fun log(message: String) {
         if (!TextUtils.isEmpty(message)) {
             val current = configView.uiState.value
@@ -147,13 +173,23 @@ fun NavContent(
     LaunchedEffect(Unit) {
         scope.launch(Dispatchers.IO) {
             while (true) {
-                if (config.isAuto && config.isOpen) {
-                    val data =
-                        if (config.isHex) config.input.hexToByteArray() else config.input.toByteArray()
-                    mainView.write(data)
-                    ioRepo.insertAsync(IoDirection.TX, IoSource.INPUT_FIELD, data)
-                    configView.update(tx = config.tx + data.size)
-                    delay(config.delayTime.toLong())
+                val current = configView.uiState.value
+                if (current.isAuto && current.isOpen) {
+                    val base = if (current.isHex) current.input.hexToByteArray() else current.input.toByteArray()
+                    val writeData = if (current.x0D0A) base.add(byteArrayOf(0x0D, 0x0A)) else base
+                    val success = runCatching { mainView.write(writeData) }.isSuccess
+                    ioRepo.insertAsync(
+                        direction = IoDirection.TX,
+                        source = IoSource.INPUT_FIELD,
+                        data = writeData,
+                        success = success,
+                        note = if (success) null else "serial write failed",
+                    )
+                    appendIoLog(if (success) "TX[INPUT]" else "TX[INPUT][FAIL]", writeData)
+                    if (success) configView.update(tx = current.tx + writeData.size)
+                    delay(current.delayTime.toLong())
+                } else {
+                    delay(50)
                 }
             }
         }
@@ -170,17 +206,7 @@ fun NavContent(
                 val outbound = if (current.isHex) it.toHexString().uppercase() else String(it)
                 wsView.broadcast(outbound)
             }
-            val show = when (current.display) {
-                0, 2 -> it.toHexString().uppercase()
-                1, 3 -> String(it)
-                4 -> "${it.toHexString().uppercase()}\n"
-                5 -> "${String(it)}\n"
-                else -> ""
-            }
-            log(show)
-            if ((current.display == 2 || current.display == 3) && current.log.length >= 10000) configView.update(
-                log = ""
-            )
+            appendIoLog("RX[SERIAL]", it)
             configView.update(rx = current.rx + it.size)
         }
     }
@@ -188,12 +214,18 @@ fun NavContent(
         if (config.isOpen && isSync) {
             wsView.start(wsConfig, onChange = { msg ->
                 val current = configView.uiState.value
-                configView.update(log = "${current.log}\n${msg}")
                 val base = if (current.isHex) msg.hexToByteArray() else msg.toByteArray()
                 val data = if (current.x0D0A) base.add(byteArrayOf(0x0D, 0x0A)) else base
-                ioRepo.insertAsync(IoDirection.TX, IoSource.WS_CLIENT, data)
-                configView.update(tx = current.tx + data.size)
-                mainView.write(data)
+                val success = runCatching { mainView.write(data) }.isSuccess
+                ioRepo.insertAsync(
+                    direction = IoDirection.TX,
+                    source = IoSource.WS_CLIENT,
+                    data = data,
+                    success = success,
+                    note = if (success) null else "serial write failed",
+                )
+                appendIoLog(if (success) "TX[WS-CLIENT]" else "TX[WS-CLIENT][FAIL]", data)
+                if (success) configView.update(tx = current.tx + data.size)
             })
         } else {
             if (wsView.isOpen()) wsView.close()
@@ -204,13 +236,32 @@ fun NavContent(
         if (wsServerEnabled) {
             wsView.startServer(wsServerPort) { msg ->
                 val current = configView.uiState.value
-                configView.update(log = "${current.log}\n${msg}")
-                if (current.isOpen) {
-                    val base = if (current.isHex) msg.hexToByteArray() else msg.toByteArray()
-                    val data = if (current.x0D0A) base.add(byteArrayOf(0x0D, 0x0A)) else base
-                    ioRepo.insertAsync(IoDirection.TX, IoSource.WS_SERVER, data)
+                val base = if (current.isHex) msg.hexToByteArray() else msg.toByteArray()
+                val data = if (current.x0D0A) base.add(byteArrayOf(0x0D, 0x0A)) else base
+
+                if (!current.isOpen) {
+                    ioRepo.insertAsync(
+                        direction = IoDirection.TX,
+                        source = IoSource.WS_SERVER,
+                        data = data,
+                        success = false,
+                        note = "serial closed",
+                    )
+                    appendIoLog("TX[WS-SERVER][DROP]", data)
+                    return@startServer
+                }
+
+                val success = runCatching { mainView.write(data) }.isSuccess
+                ioRepo.insertAsync(
+                    direction = IoDirection.TX,
+                    source = IoSource.WS_SERVER,
+                    data = data,
+                    success = success,
+                    note = if (success) null else "serial write failed",
+                )
+                if (success) {
+                    appendIoLog("TX[WS-SERVER]", data)
                     configView.update(tx = current.tx + data.size)
-                    mainView.write(data)
                 }
             }
         } else {
@@ -293,8 +344,9 @@ fun NavContent(
                 .fillMaxWidth()
                 .padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(text = "Tx:${config.tx}", modifier = Modifier.padding(end = 12.dp))
+            Text(text = "Tx:${config.tx}")
             Text(text = "Rx:${config.rx}")
         }
         Column {
@@ -341,9 +393,16 @@ fun NavContent(
                                     if (config.isHex) config.input.hexToByteArray() else config.input.toByteArray()
                                 val writeData =
                                     if (config.x0D0A) data.add(byteArrayOf(0x0D, 0x0A)) else data
-                                ioRepo.insertAsync(IoDirection.TX, IoSource.INPUT_FIELD, writeData)
-                                configView.update(tx = config.tx + writeData.size)
-                                mainView.write(writeData)
+                                val success = runCatching { mainView.write(writeData) }.isSuccess
+                                ioRepo.insertAsync(
+                                    direction = IoDirection.TX,
+                                    source = IoSource.INPUT_FIELD,
+                                    data = writeData,
+                                    success = success,
+                                    note = if (success) null else "serial write failed",
+                                )
+                                appendIoLog(if (success) "TX[INPUT]" else "TX[INPUT][FAIL]", writeData)
+                                if (success) configView.update(tx = config.tx + writeData.size)
                             } catch (e: Exception) {
                                 log("error:${e.message}")
                                 e.printStackTrace()
