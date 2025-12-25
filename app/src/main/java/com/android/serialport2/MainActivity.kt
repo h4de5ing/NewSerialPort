@@ -2,6 +2,7 @@ package com.android.serialport2
 
 import android.os.Bundle
 import android.text.TextUtils
+import android_serialport_api.SerialPortFinder
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.border
@@ -51,10 +52,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.android.serialport2.R
 import com.android.serialport2.other.App.Companion.dataSaverPreferences
 import com.android.serialport2.other.add
 import com.android.serialport2.other.hexToByteArray
@@ -72,6 +75,7 @@ import com.funny.data_saver.core.rememberDataSaverState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.io.File
 
 
 class MainActivity : ComponentActivity() {
@@ -126,6 +130,7 @@ fun NavContent(
 ) {
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
+    val context = LocalContext.current
     val config by configView.uiState.collectAsState(initial = Config())
     val wsConfig by rememberDataSaverState(key = "ws", initialValue = defaultUri)
     val isSync by rememberDataSaverState(key = "sync", initialValue = true)
@@ -148,6 +153,24 @@ fun NavContent(
         if (inputField.text != config.input) {
             inputField =
                 TextFieldValue(text = config.input, selection = TextRange(config.input.length))
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        val devices = runCatching {
+            val finderDevices = runCatching { SerialPortFinder().allDevs }.getOrDefault(mutableListOf())
+            val fallback = context.resources.getStringArray(R.array.node_index).toList()
+            (finderDevices + fallback)
+                .distinct()
+                .filter { File(it).exists() }
+                .sorted()
+        }.getOrDefault(emptyList())
+
+        if (devices.isNotEmpty()) {
+            configView.update(devices = devices)
+            if (config.dev.isBlank() || !devices.contains(config.dev)) {
+                configView.update(dev = devices[0])
+            }
         }
     }
     LaunchedEffect(Unit) {
