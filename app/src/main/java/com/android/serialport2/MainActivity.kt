@@ -16,9 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.filled.Settings
@@ -40,6 +38,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,6 +48,9 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.items
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.serialport2.data.db.IoDirection
 import com.android.serialport2.data.db.IoSource
@@ -71,6 +73,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 
 class MainActivity : ComponentActivity() {
@@ -97,7 +102,6 @@ fun NavContent(
     wsView: WSViewModel = viewModel()
 ) {
     val scope = rememberCoroutineScope()
-    val scrollState = rememberScrollState()
     val context = LocalContext.current
     val ioRepo = remember(context) { SerialIoRepository.getInstance(context) }
     val config by configView.uiState.collectAsState(initial = Config())
@@ -105,6 +109,9 @@ fun NavContent(
     val isSync by rememberDataSaverState(key = "sync", initialValue = false)
     val wsServerEnabled by rememberDataSaverState(key = "ws_server_enabled", initialValue = false)
     val wsServerPort by rememberDataSaverState(key = "ws_server_port", initialValue = 8086)
+    var sessionStartMs by rememberSaveable { mutableStateOf(System.currentTimeMillis()) }
+    val records by ioRepo.observeSince(sessionStartMs).collectAsState(initial = emptyList())
+    val logListState = rememberLazyListState()
     var showTextInputHistorySheet by remember { mutableStateOf(false) }
     val showingSettingsDialog = remember { mutableStateOf(false) }
     var inputField by remember { mutableStateOf(TextFieldValue(config.input)) }
@@ -119,23 +126,9 @@ fun NavContent(
         }
     }
 
-    fun appendIoLog(tag: String, bytes: ByteArray) {
-        if (bytes.isEmpty()) return
-        val current = configView.uiState.value
-        val payload = formatForDisplay(bytes, current.display)
-        if (payload.isEmpty()) return
-        val entry = "$tag $payload"
-        val toAppend = if (entry.endsWith("\n")) entry else "$entry\n"
-        configView.update(log = "${current.log}${toAppend}")
-
-        val after = configView.uiState.value
-        if ((after.display == 2 || after.display == 3) && after.log.length >= 10000) {
-            configView.update(log = "")
-        }
-    }
-
     fun log(message: String) {
         if (!TextUtils.isEmpty(message)) {
+            // Keep plain text logs for errors only; IO logs are DB-driven.
             val current = configView.uiState.value
             configView.update(log = "${current.log}${message}")
         }
@@ -175,7 +168,8 @@ fun NavContent(
             while (true) {
                 val current = configView.uiState.value
                 if (current.isAuto && current.isOpen) {
-                    val base = if (current.isHex) current.input.hexToByteArray() else current.input.toByteArray()
+                    val base =
+                        if (current.isHex) current.input.hexToByteArray() else current.input.toByteArray()
                     val writeData = if (current.x0D0A) base.add(byteArrayOf(0x0D, 0x0A)) else base
                     val success = runCatching { mainView.write(writeData) }.isSuccess
                     ioRepo.insertAsync(
@@ -185,7 +179,6 @@ fun NavContent(
                         success = success,
                         note = if (success) null else "serial write failed",
                     )
-                    appendIoLog(if (success) "TX[INPUT]" else "TX[INPUT][FAIL]", writeData)
                     if (success) configView.update(tx = current.tx + writeData.size)
                     delay(current.delayTime.toLong())
                 } else {
@@ -206,7 +199,6 @@ fun NavContent(
                 val outbound = if (current.isHex) it.toHexString().uppercase() else String(it)
                 wsView.broadcast(outbound)
             }
-            appendIoLog("RX[SERIAL]", it)
             configView.update(rx = current.rx + it.size)
         }
     }
@@ -224,7 +216,6 @@ fun NavContent(
                     success = success,
                     note = if (success) null else "serial write failed",
                 )
-                appendIoLog(if (success) "TX[WS-CLIENT]" else "TX[WS-CLIENT][FAIL]", data)
                 if (success) configView.update(tx = current.tx + data.size)
             })
         } else {
@@ -247,7 +238,6 @@ fun NavContent(
                         success = false,
                         note = "serial closed",
                     )
-                    appendIoLog("TX[WS-SERVER][DROP]", data)
                     return@startServer
                 }
 
@@ -259,16 +249,15 @@ fun NavContent(
                     success = success,
                     note = if (success) null else "serial write failed",
                 )
-                if (success) {
-                    appendIoLog("TX[WS-SERVER]", data)
-                    configView.update(tx = current.tx + data.size)
-                }
+                if (success) configView.update(tx = current.tx + data.size)
             }
         } else {
             if (wsView.isServerRunning()) wsView.stopServer()
         }
     }
-    LaunchedEffect(config.log) { scope.launch { scrollState.scrollTo(scrollState.maxValue) } }
+    LaunchedEffect(records.size) {
+        if (records.isNotEmpty()) logListState.animateScrollToItem(records.size - 1)
+    }
     // A bottom sheet to show the text input history to pick from.
     if (showTextInputHistorySheet) {
         val textInputHistory = listOf("历史记录1", "历史记录2", "历史记录3")
@@ -305,6 +294,8 @@ fun NavContent(
                                 baudRate = config.baud.toInt(),
                                 isGoogle = config.isGoogle
                             )
+                            sessionStartMs = System.currentTimeMillis()
+                            configView.update(tx = 0, rx = 0, log = "")
                         } catch (e: Exception) {
                             configView.update(log = "${config.log}打开异常:${e.message}\n")
                         }
@@ -322,7 +313,10 @@ fun NavContent(
             Text(
                 text = "清空",
                 fontSize = 14.sp,
-                modifier = Modifier.clickable { configView.update(tx = 0, rx = 0, log = "") })
+                modifier = Modifier.clickable {
+                    sessionStartMs = System.currentTimeMillis()
+                    configView.update(tx = 0, rx = 0, log = "")
+                })
         }
 
         Box(
@@ -332,11 +326,59 @@ fun NavContent(
                 .padding(3.dp)
                 .weight(1f)
         ) {
-            Text(
-                text = config.log, modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(scrollState)
-            )
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                state = logListState,
+            ) {
+                val df = SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault())
+                items(records) { r ->
+                    val ts = df.format(Date(r.timestampMs))
+                    val dir = if (r.direction == IoDirection.RX.code) "RX" else "TX"
+                    val src = when (r.source) {
+                        IoSource.SERIAL_RAW.code -> "SERIAL"
+                        IoSource.INPUT_FIELD.code -> "INPUT"
+                        IoSource.WS_CLIENT.code -> "WS-CLIENT"
+                        IoSource.WS_SERVER.code -> "WS-SERVER"
+                        else -> "UNKNOWN"
+                    }
+                    val status = if (r.direction == IoDirection.TX.code) {
+                        if (r.success) "OK" else "FAIL"
+                    } else {
+                        ""
+                    }
+
+                    val payload = formatForDisplay(r.data, config.display)
+                    Column(modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 2.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = "$ts  $dir[$src]${if (status.isNotEmpty()) "[$status]" else ""}",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            if (!r.note.isNullOrBlank()) {
+                                Text(
+                                    text = r.note,
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            }
+                        }
+                        if (payload.isNotEmpty()) {
+                            Text(
+                                text = payload.trimEnd(),
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                    }
+                }
+            }
         }
 
         Row(
@@ -401,7 +443,6 @@ fun NavContent(
                                     success = success,
                                     note = if (success) null else "serial write failed",
                                 )
-                                appendIoLog(if (success) "TX[INPUT]" else "TX[INPUT][FAIL]", writeData)
                                 if (success) configView.update(tx = config.tx + writeData.size)
                             } catch (e: Exception) {
                                 log("error:${e.message}")

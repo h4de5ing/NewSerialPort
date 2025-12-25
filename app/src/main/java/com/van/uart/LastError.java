@@ -1,6 +1,8 @@
 package com.van.uart;
 
 
+import androidx.annotation.NonNull;
+
 public class LastError extends Exception {
 
     private static final long serialVersionUID = -5059096406499912488L;
@@ -15,6 +17,7 @@ public class LastError extends Exception {
         return errno;
     }
 
+    @NonNull
     @Override
     public String toString() {
         return "errno = " + errno + ", " + getMessage();

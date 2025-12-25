@@ -1,6 +1,7 @@
 package com.android.serialport2.data.db
 
 import android.content.Context
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -9,6 +10,10 @@ import kotlinx.coroutines.launch
 class SerialIoRepository private constructor(context: Context) {
     private val dao = SerialIoDatabase.getInstance(context).serialIoDao()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    fun observeSince(sinceMs: Long, limit: Int = 2000): Flow<List<SerialIoRecord>> {
+        return dao.observeSince(sinceMs = sinceMs, limit = limit)
+    }
 
     fun insertAsync(direction: IoDirection, source: IoSource, data: ByteArray) {
         insertAsync(direction = direction, source = source, data = data, success = true, note = null)
