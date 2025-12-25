@@ -5,6 +5,7 @@ import android.text.TextUtils
 import android_serialport_api.SerialPortFinder
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,6 +17,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Send
@@ -23,6 +29,8 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Stop
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -48,9 +56,6 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.lazy.items
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.serialport2.data.db.IoDirection
 import com.android.serialport2.data.db.IoSource
@@ -67,6 +72,13 @@ import com.android.serialport2.ui.TextInputHistorySheet
 import com.android.serialport2.ui.WSViewModel
 import com.android.serialport2.ui.defaultUri
 import com.android.serialport2.ui.theme.NewSerialPortTheme
+import com.android.serialport2.ui.theme.SourceInputFieldDot
+import com.android.serialport2.ui.theme.SourceSerialRawDot
+import com.android.serialport2.ui.theme.SourceWsClientDot
+import com.android.serialport2.ui.theme.SourceWsServerDot
+import com.android.serialport2.ui.theme.StatusFailureDot
+import com.android.serialport2.ui.theme.StatusNeutralDot
+import com.android.serialport2.ui.theme.StatusSuccessDot
 import com.funny.data_saver.core.LocalDataSaver
 import com.funny.data_saver.core.rememberDataSaverState
 import kotlinx.coroutines.Dispatchers
@@ -333,48 +345,87 @@ fun NavContent(
                 val df = SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault())
                 items(records) { r ->
                     val ts = df.format(Date(r.timestampMs))
-                    val dir = if (r.direction == IoDirection.RX.code) "RX" else "TX"
-                    val src = when (r.source) {
-                        IoSource.SERIAL_RAW.code -> "SERIAL"
-                        IoSource.INPUT_FIELD.code -> "INPUT"
-                        IoSource.WS_CLIENT.code -> "WS-CLIENT"
-                        IoSource.WS_SERVER.code -> "WS-SERVER"
-                        else -> "UNKNOWN"
+                    val isRx = r.direction == IoDirection.RX.code
+
+                    val sourceDotColor = when (r.source) {
+                        IoSource.SERIAL_RAW.code -> SourceSerialRawDot
+                        IoSource.INPUT_FIELD.code -> SourceInputFieldDot
+                        IoSource.WS_CLIENT.code -> SourceWsClientDot
+                        IoSource.WS_SERVER.code -> SourceWsServerDot
+                        else -> StatusNeutralDot
                     }
-                    val status = if (r.direction == IoDirection.TX.code) {
-                        if (r.success) "OK" else "FAIL"
-                    } else {
-                        ""
-                    }
+                    val successDotColor =
+                        if (isRx) StatusNeutralDot else if (r.success) StatusSuccessDot else StatusFailureDot
 
                     val payload = formatForDisplay(r.data, config.display)
-                    Column(modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 2.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                    ) {
+                        Card(
+                            modifier = Modifier
+                                .align(if (isRx) Alignment.CenterStart else Alignment.CenterEnd),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isRx) {
+                                    MaterialTheme.colorScheme.surfaceContainerLow
+                                } else {
+                                    MaterialTheme.colorScheme.surfaceContainer
+                                },
+                            ),
                         ) {
-                            Text(
-                                text = "$ts  $dir[$src]${if (status.isNotEmpty()) "[$status]" else ""}",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            if (!r.note.isNullOrBlank()) {
-                                Text(
-                                    text = r.note,
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.error,
-                                )
+                            Column(
+                                modifier = Modifier
+                                    .padding(10.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp),
+                            ) {
+                                Row(
+                                    modifier = Modifier,
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                ) {
+                                    Text(
+                                        text = ts,
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(12.dp)
+                                                .background(successDotColor, CircleShape),
+                                            contentAlignment = Alignment.Center,
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(8.dp)
+                                                    .background(sourceDotColor, CircleShape),
+                                            )
+                                        }
+                                    }
+                                }
+
+                                if (!r.note.isNullOrBlank()) {
+                                    Text(
+                                        text = r.note,
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.error,
+                                    )
+                                }
+
+                                if (payload.isNotEmpty()) {
+                                    Text(
+                                        text = payload.trimEnd(),
+                                        fontSize = 14.sp,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                    )
+                                }
                             }
-                        }
-                        if (payload.isNotEmpty()) {
-                            Text(
-                                text = payload.trimEnd(),
-                                fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
                         }
                     }
                 }
