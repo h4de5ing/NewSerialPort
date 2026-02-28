@@ -21,3 +21,15 @@ val SourceWsServerDot = Color(0xFFFF6D00)
 val StatusSuccessDot = Color(0xFF00C853)
 val StatusFailureDot = Color(0xFFD50000)
 val StatusNeutralDot = Color(0xFF9E9E9E)
+
+val sourceColors = listOf(
+    SourceSerialRawDot,
+    SourceInputFieldDot,
+    SourceWsClientDot,
+    SourceWsServerDot
+)
+val statusColors = listOf(
+    StatusSuccessDot,
+    StatusFailureDot,
+    StatusNeutralDot
+)

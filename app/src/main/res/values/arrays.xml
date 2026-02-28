@@ -27,8 +27,6 @@
         <item>ASCII</item>
         <item>HEX(fast)</item>
         <item>ASCII(fast)</item>
-        <item>Hex(Enter)</item>
-        <item>ASCII(Enter)</item>
         <item>Empty</item>
     </string-array>
     <string-array name="node_index">

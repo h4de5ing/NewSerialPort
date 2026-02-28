@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -132,8 +131,6 @@ fun NavContent(
         return when (displayMode) {
             0, 2 -> bytes.toHexString().uppercase()
             1, 3 -> String(bytes)
-            4 -> "${bytes.toHexString().uppercase()}\n"
-            5 -> "${String(bytes)}\n"
             else -> ""
         }
     }
@@ -214,12 +211,23 @@ fun NavContent(
             configView.update(rx = current.rx + it.size)
         }
     }
-    LaunchedEffect(config.isOpen, isSync, wsConfig) {
-        if (config.isOpen && isSync) {
+    LaunchedEffect(isSync, wsConfig) {
+        if (isSync) {
             wsView.start(wsConfig, onChange = { msg ->
                 val current = configView.uiState.value
                 val base = if (current.isHex) msg.hexToByteArray() else msg.toByteArray()
                 val data = if (current.x0D0A) base.add(byteArrayOf(0x0D, 0x0A)) else base
+                if (!current.isOpen) {
+                    ioRepo.insertAsync(
+                        direction = IoDirection.TX,
+                        source = IoSource.WS_CLIENT,
+                        data = data,
+                        success = false,
+                        note = "serial closed",
+                    )
+                    return@start
+                }
+
                 val success = runCatching { mainView.write(data) }.isSuccess
                 ioRepo.insertAsync(
                     direction = IoDirection.TX,
@@ -362,12 +370,12 @@ fun NavContent(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 4.dp),
+                            .padding(vertical = 1.dp),
                     ) {
                         Card(
                             modifier = Modifier
                                 .align(if (isRx) Alignment.CenterStart else Alignment.CenterEnd),
-                            shape = RoundedCornerShape(14.dp),
+                            shape = RoundedCornerShape(6.dp),
                             colors = CardDefaults.cardColors(
                                 containerColor = if (isRx) {
                                     MaterialTheme.colorScheme.surfaceContainerLow
@@ -377,9 +385,7 @@ fun NavContent(
                             ),
                         ) {
                             Column(
-                                modifier = Modifier
-                                    .padding(10.dp),
-                                verticalArrangement = Arrangement.spacedBy(6.dp),
+                                modifier = Modifier.padding(2.dp)
                             ) {
                                 Row(
                                     modifier = Modifier,
@@ -393,37 +399,25 @@ fun NavContent(
                                     )
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(2.dp),
                                     ) {
                                         Box(
                                             modifier = Modifier
-                                                .size(12.dp)
+                                                .size(6.dp)
                                                 .background(successDotColor, CircleShape),
                                             contentAlignment = Alignment.Center,
                                         ) {
                                             Box(
                                                 modifier = Modifier
-                                                    .size(8.dp)
+                                                    .size(3.dp)
                                                     .background(sourceDotColor, CircleShape),
                                             )
                                         }
                                     }
                                 }
 
-                                if (!r.note.isNullOrBlank()) {
-                                    Text(
-                                        text = r.note,
-                                        fontSize = 12.sp,
-                                        color = MaterialTheme.colorScheme.error,
-                                    )
-                                }
-
                                 if (payload.isNotEmpty()) {
-                                    Text(
-                                        text = payload.trimEnd(),
-                                        fontSize = 14.sp,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                    )
+                                    Text(text = payload.trimEnd(), fontSize = 14.sp)
                                 }
                             }
                         }
