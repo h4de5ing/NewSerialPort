@@ -1,16 +1,16 @@
 [versions]
-agp = "8.13.2"
-kotlin = "2.3.0"
-ksp = "2.3.2"
+agp = "9.1.0"
+kotlin = "2.3.10"
+ksp = "2.3.4"
 core-ktx = "1.17.0"
 lifecycle = "2.10.0"
-runtime-livedata = "1.10.0"
-activity-compose = "1.12.1"
-compose-bom = "2025.12.01"
+runtime-livedata = "1.10.4"
+activity-compose = "1.12.4"
+compose-bom = "2026.02.01"
 compose-material3 = "1.4.0"
 accompanist = "0.37.3"
 datastore = "1.2.0"
-kotlinx-serialization = "1.9.0"
+kotlinx-serialization = "1.10.0"
 java-websocket = "1.6.0"
 data-saver-core = "1.2.2"
 room = "2.8.4"
@@ -44,7 +44,6 @@ glance = { module = "com.guolindev.glance:glance", version.ref = "glance" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
-jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 jetbrains-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 jetbrains-kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }

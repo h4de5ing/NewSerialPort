@@ -1,10 +1,11 @@
+import com.android.build.api.artifact.SingleArtifact
 import java.io.ByteArrayOutputStream
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.jetbrains.kotlin.serialization)
     alias(libs.plugins.jetbrains.kotlin.compose)
     alias(libs.plugins.ksp)
@@ -111,34 +112,6 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
-
-    sourceSets {
-        getByName("main") {
-            jniLibs.srcDirs("src/main/jniLibs")
-        }
-    }
-
-    applicationVariants.configureEach {
-        val buildType = buildType.name
-        val prefix = "android_serialport"
-        val createTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
-        if (buildType == "release") {
-            outputs.all {
-                val fromFile = outputFile
-                val intoFile = "D:/test/${prefix}/v${android.defaultConfig.versionName}/"
-
-                copy {
-                    from(fromFile)
-                    into(intoFile)
-                    include("*.apk")
-                    rename(
-                        "app-",
-                        "${prefix}_v${android.defaultConfig.versionName}_${createTime}_${getGitSha()}_"
-                    )
-                }
-            }
-        }
-    }
 }
 
 dependencies {
@@ -169,4 +142,25 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
     debugImplementation(libs.glance)
+}
+
+androidComponents {
+    val id = "android_serialport"
+    val createTime = SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault()).format(Date())
+    val versionName = android.defaultConfig.versionName ?: ""
+    var intoFile = "D:/test/$id/v${versionName}"
+    onVariants(selector().withBuildType("release")) { variant ->
+        val variantCap =
+            variant.name.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+        val copyApkTask = tasks.register<Copy>("copy${variantCap}Apk") {
+            from(variant.artifacts.get(SingleArtifact.APK))
+            into(intoFile)
+            include("*.apk")
+            rename("app-", "${id}_v${versionName}_${createTime}_${getGitSha()}_")
+        }
+        tasks.matching { it.name == "assemble${variantCap}" }
+            .configureEach { finalizedBy(copyApkTask) }
+        tasks.matching { it.name == "package${variantCap}" }
+            .configureEach { finalizedBy(copyApkTask) }
+    }
 }
