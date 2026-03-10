@@ -47,7 +47,7 @@ android {
 
         ndk {
             //noinspection ChromeOsAbiSupport
-            abiFilters += "armeabi"
+            abiFilters += listOf("armeabi","armeabi-v7a","arm64-v8a")
         }
     }
 
@@ -142,6 +142,8 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
     debugImplementation(libs.glance)
+
+    implementation(libs.jserialcomm)
 }
 
 androidComponents {

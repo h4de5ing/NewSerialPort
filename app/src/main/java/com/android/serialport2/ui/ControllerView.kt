@@ -44,7 +44,7 @@ fun ControllerView(
                     mainView.setupSerial(
                         path = config.dev,
                         baudRate = config.baud.toInt(),
-                        isGoogle = config.isGoogle
+                        serialType = config.serialType
                     )
                 } catch (e: Exception) {
                     configView.update(log = "${config.log}打开异常:${e.message}\n")

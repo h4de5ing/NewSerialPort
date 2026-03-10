@@ -312,7 +312,7 @@ fun NavContent(
                             mainView.setupSerial(
                                 path = config.dev,
                                 baudRate = config.baud.toInt(),
-                                isGoogle = config.isGoogle
+                                serialType = config.serialType
                             )
                             sessionStartMs = System.currentTimeMillis()
                             configView.update(tx = 0, rx = 0, log = "")

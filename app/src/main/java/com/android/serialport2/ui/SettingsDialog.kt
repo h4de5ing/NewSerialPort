@@ -50,6 +50,7 @@ fun SettingsDialog(
     val config by configView.uiState.collectAsState(initial = Config())
     val baudList = stringArrayResource(id = R.array.baud)
     val displayList = stringArrayResource(id = R.array.display)
+    val serialTypeList = stringArrayResource(id = R.array.serial_type)
 
     var wsUri by rememberDataSaverState(key = "ws", initialValue = defaultUri)
     var wsClientEnabled by rememberDataSaverState(key = "sync", initialValue = false)
@@ -164,10 +165,16 @@ fun SettingsDialog(
                         ToggleRow(
                             title = "Hex", checked = config.isHex
                         ) { configView.update(isHex = it) }
-                        ToggleRow(title = "Google", checked = config.isGoogle) {
-                            configView.update(
-                                isGoogle = it
-                            )
+                        SpinnerEdit(
+                            modifier = Modifier.fillMaxWidth(),
+                            items = serialTypeList.toList(),
+                            hint = "串口库",
+                            value = serialTypeList.getOrElse(config.serialType) {
+                                serialTypeList.firstOrNull() ?: ""
+                            },
+                            readOnly = true
+                        ) { index, _ ->
+                            if (index >= 0) configView.update(serialType = index)
                         }
                         ToggleRow(
                             title = "0D0A", checked = config.x0D0A

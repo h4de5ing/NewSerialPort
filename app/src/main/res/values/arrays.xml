@@ -29,6 +29,11 @@
         <item>ASCII(fast)</item>
         <item>Empty</item>
     </string-array>
+    <string-array name="serial_type">
+        <item>Van</item>
+        <item>Google</item>
+        <item>jSerialComm</item>
+    </string-array>
     <string-array name="node_index">
         <item>/dev/ttyUSB0</item>
         <item>/dev/ttyUSB1</item>
