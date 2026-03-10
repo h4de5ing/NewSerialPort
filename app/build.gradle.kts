@@ -34,8 +34,8 @@ android {
         applicationId = "com.android.serialport2"
         minSdk = 24
         targetSdk = 36
-        versionCode = 502
-        versionName = "5.0.2"
+        versionCode = 510
+        versionName = "5.1.0"
 
         vectorDrawables {
             useSupportLibrary = true

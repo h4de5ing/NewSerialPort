@@ -68,7 +68,7 @@ class CrashHandler : Thread.UncaughtExceptionHandler {
                     Looper.prepare()
                     Toast.makeText(
                         ctx,
-                        "产测工具异常退出,正在收集日志",
+                        "串口工具异常退出,正在收集日志",
                         Toast.LENGTH_LONG
                     )
                         .show()

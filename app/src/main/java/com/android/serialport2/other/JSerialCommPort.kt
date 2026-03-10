@@ -3,9 +3,24 @@ package com.android.serialport2.other
 import com.fazecast.jSerialComm.SerialPort
 import kotlin.concurrent.thread
 
+/**
+ * TODO 通过源码引入然后移除su的部分
+ */
 class JSerialCommPort(path: String, baudRate: Int, val onChange: (ByteArray) -> Unit) :
     SerialPortBase {
     private var serialPort: SerialPort? = null
+
+    companion object {
+        init {
+            // 跳过 jSerialComm 在 Android 上通过 su 修改串口权限的逻辑
+            try {
+                val field = SerialPort::class.java.getDeclaredField("isAndroidDelete")
+                field.isAccessible = true
+                field.setBoolean(null, false)
+            } catch (_: Exception) {
+            }
+        }
+    }
 
     init {
         try {
