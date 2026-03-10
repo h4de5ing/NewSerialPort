@@ -86,10 +86,7 @@ android {
     buildTypes {
         getByName("debug") {
             isMinifyEnabled = false
-            signingConfig = when (android.productFlavors.find { it.name == "system" }?.name) {
-                "system" -> signingConfigs.getByName("system")
-                else -> signingConfigs.getByName("normal")
-            }
+            signingConfig = null//不在使用debug.keystore，避免被误用
         }
         getByName("release") {
             isMinifyEnabled = false
