@@ -16,15 +16,19 @@ class VanSerialPort(path: String, baudRate: Int, val onChange: (ByteArray) -> Un
                 UartManager.getBaudRate(baudRate)
             )
             thread {
-                while (true) {
-                    val buffer = ByteArray(1024)
-                    uartManager?.apply {
-                        val size = read(buffer, buffer.size, 50, 1)
-                        if (size > 0) {
-                            val data = ByteArray(size)
-                            System.arraycopy(buffer, 0, data, 0, size)
-                            onChange(data)
+                val buffer = ByteArray(1024)
+                while (uartManager?.isOpen == true) {
+                    try {
+                        uartManager?.apply {
+                            val size = read(buffer, buffer.size, 50, 1)
+                            if (size > 0) {
+                                val data = ByteArray(size)
+                                System.arraycopy(buffer, 0, data, 0, size)
+                                onChange(data)
+                            }
                         }
+                    } catch (_: LastError) {
+                        // errno=4 (EINTR) 等可恢复错误，继续重试
                     }
                 }
             }
