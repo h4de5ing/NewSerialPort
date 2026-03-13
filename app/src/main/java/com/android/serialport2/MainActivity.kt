@@ -5,6 +5,7 @@ import android.text.TextUtils
 import android_serialport_api.SerialPortFinder
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -35,7 +36,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -92,13 +93,12 @@ import java.util.Locale
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContent {
             NewSerialPortTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
-                ) {
+                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     CompositionLocalProvider(LocalDataSaver provides dataSaverPreferences) {
-                        NavContent()
+                        NavContent(modifier = Modifier.padding(innerPadding))
                     }
                 }
             }
@@ -108,6 +108,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun NavContent(
+    modifier: Modifier = Modifier,
     mainView: MainViewModel = viewModel(),
     configView: ConfigViewModel = viewModel(),
     wsView: WSViewModel = viewModel()
@@ -291,7 +292,7 @@ fun NavContent(
             onHistoryItemsDeleteAll = { },
         )
     }
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = modifier.fillMaxSize()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
