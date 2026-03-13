@@ -43,6 +43,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -121,7 +122,7 @@ fun NavContent(
     val isSync by rememberDataSaverState(key = "sync", initialValue = false)
     val wsServerEnabled by rememberDataSaverState(key = "ws_server_enabled", initialValue = false)
     val wsServerPort by rememberDataSaverState(key = "ws_server_port", initialValue = 8086)
-    var sessionStartMs by rememberSaveable { mutableStateOf(System.currentTimeMillis()) }
+    var sessionStartMs by rememberSaveable { mutableLongStateOf(System.currentTimeMillis()) }
     val records by ioRepo.observeSince(sessionStartMs).collectAsState(initial = emptyList())
     val logListState = rememberLazyListState()
     var showTextInputHistorySheet by remember { mutableStateOf(false) }
