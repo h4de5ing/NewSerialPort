@@ -338,6 +338,7 @@ fun NavContent(
                 modifier = Modifier.clickable {
                     sessionStartMs = System.currentTimeMillis()
                     configView.update(tx = 0, rx = 0, log = "")
+                    ioRepo.clearAllAsync()
                 })
         }
 

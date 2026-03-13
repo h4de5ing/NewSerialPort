@@ -13,8 +13,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.android.serialport2.data.db.SerialIoRepository
 
 @Composable
 fun ControllerView(
@@ -22,6 +24,8 @@ fun ControllerView(
     configView: ConfigViewModel = viewModel(),
     ws: WSViewModel = viewModel()
 ) {
+    val context = LocalContext.current
+    val ioRepo = remember(context) { SerialIoRepository.getInstance(context) }
     val config by configView.uiState.collectAsState(initial = Config())
     val showingSettings = remember { mutableStateOf(false) }
 
@@ -35,7 +39,10 @@ fun ControllerView(
             Text(text = "Rx:${config.rx}")
         }
         Button(
-            onClick = { configView.update(tx = 0, rx = 0, log = "") },
+            onClick = {
+                configView.update(tx = 0, rx = 0, log = "")
+                ioRepo.clearAllAsync()
+            },
             shape = RoundedCornerShape(0.dp)
         ) { Text(text = "清除") }
         Button(onClick = {

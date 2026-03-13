@@ -11,6 +11,10 @@ class SerialIoRepository private constructor(context: Context) {
     private val dao = SerialIoDatabase.getInstance(context).serialIoDao()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    fun clearAllAsync() {
+        scope.launch { dao.clearAll() }
+    }
+
     fun observeSince(sinceMs: Long, limit: Int = 2000): Flow<List<SerialIoRecord>> {
         return dao.observeSince(sinceMs = sinceMs, limit = limit)
     }
