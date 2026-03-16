@@ -53,7 +53,7 @@ android {
 
     signingConfigs {
         create("normal") {
-            storeFile = file("../app.jks")
+            storeFile = file("../apk_sign.jks")
             storePassword = "android"
             keyAlias = "android"
             keyPassword = "android"
