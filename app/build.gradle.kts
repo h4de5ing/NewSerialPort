@@ -69,14 +69,12 @@ android {
     productFlavors {
         create("normal") {
             applicationId = "com.android.serialport2"
-            manifestPlaceholders["sharedUserId"] = "com.android.serialport2"
             manifestPlaceholders["applicationLabel"] = "SerialPort"
             manifestPlaceholders["applicationIcon"] = "@mipmap/ic_launcher"
             signingConfig = signingConfigs.getByName("normal")
         }
         create("system") {
             applicationId = "com.android.serialport2.system"
-            manifestPlaceholders["sharedUserId"] = "android.uid.system"
             manifestPlaceholders["applicationLabel"] = "SystemSerialPort"
             manifestPlaceholders["applicationIcon"] = "@mipmap/ic_launcher_system"
             signingConfig = signingConfigs.getByName("system")
