@@ -34,8 +34,8 @@ android {
         applicationId = "com.android.serialport2"
         minSdk = 24
         targetSdk = 36
-        versionCode = 510
-        versionName = "5.1.0"
+        versionCode = 511
+        versionName = "5.1.1"
 
         vectorDrawables {
             useSupportLibrary = true
@@ -75,6 +75,12 @@ android {
         }
         create("system") {
             applicationId = "com.android.serialport2.system"
+            manifestPlaceholders["applicationLabel"] = "SystemSerialPort"
+            manifestPlaceholders["applicationIcon"] = "@mipmap/ic_launcher_system"
+            signingConfig = signingConfigs.getByName("system")
+        }
+        create("settings") {
+            applicationId = "android.test.settings"
             manifestPlaceholders["applicationLabel"] = "SystemSerialPort"
             manifestPlaceholders["applicationIcon"] = "@mipmap/ic_launcher_system"
             signingConfig = signingConfigs.getByName("system")
