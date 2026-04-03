@@ -81,7 +81,7 @@ android {
         }
         create("settings") {
             applicationId = "android.test.settings"
-            manifestPlaceholders["applicationLabel"] = "SystemSerialPort"
+            manifestPlaceholders["applicationLabel"] = "SystemSerialPortSettings"
             manifestPlaceholders["applicationIcon"] = "@mipmap/ic_launcher_system"
             signingConfig = signingConfigs.getByName("system")
         }

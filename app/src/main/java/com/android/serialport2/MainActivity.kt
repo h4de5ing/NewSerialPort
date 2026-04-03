@@ -6,7 +6,6 @@ import android_serialport_api.SerialPortFinder
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,7 +20,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Send
@@ -73,13 +71,6 @@ import com.android.serialport2.ui.TextInputHistorySheet
 import com.android.serialport2.ui.WSViewModel
 import com.android.serialport2.ui.defaultUri
 import com.android.serialport2.ui.theme.NewSerialPortTheme
-import com.android.serialport2.ui.theme.SourceInputFieldDot
-import com.android.serialport2.ui.theme.SourceSerialRawDot
-import com.android.serialport2.ui.theme.SourceWsClientDot
-import com.android.serialport2.ui.theme.SourceWsServerDot
-import com.android.serialport2.ui.theme.StatusFailureDot
-import com.android.serialport2.ui.theme.StatusNeutralDot
-import com.android.serialport2.ui.theme.StatusSuccessDot
 import com.funny.data_saver.core.LocalDataSaver
 import com.funny.data_saver.core.rememberDataSaverState
 import kotlinx.coroutines.Dispatchers
@@ -333,9 +324,7 @@ fun NavContent(
                 )
             }
             Text(
-                text = "清空",
-                fontSize = 14.sp,
-                modifier = Modifier.clickable {
+                text = "清空", fontSize = 14.sp, modifier = Modifier.clickable {
                     sessionStartMs = System.currentTimeMillis()
                     configView.update(tx = 0, rx = 0, log = "")
                     ioRepo.clearAllAsync()
@@ -358,16 +347,13 @@ fun NavContent(
                     val ts = df.format(Date(r.timestampMs))
                     val isRx = r.direction == IoDirection.RX.code
 
-                    val sourceDotColor = when (r.source) {
-                        IoSource.SERIAL_RAW.code -> SourceSerialRawDot
-                        IoSource.INPUT_FIELD.code -> SourceInputFieldDot
-                        IoSource.WS_CLIENT.code -> SourceWsClientDot
-                        IoSource.WS_SERVER.code -> SourceWsServerDot
-                        else -> StatusNeutralDot
+                    val sourceLabel = when (r.source) {
+                        IoSource.SERIAL_RAW.code -> "输出"
+                        IoSource.INPUT_FIELD.code -> "输入"
+                        IoSource.WS_CLIENT.code -> "WS客户端"
+                        IoSource.WS_SERVER.code -> "WS服务端"
+                        else -> "未知"
                     }
-                    val successDotColor =
-                        if (isRx) StatusNeutralDot else if (r.success) StatusSuccessDot else StatusFailureDot
-
                     val payload = formatForDisplay(r.data, config.display)
 
                     Box(
@@ -376,8 +362,7 @@ fun NavContent(
                             .padding(vertical = 1.dp),
                     ) {
                         Card(
-                            modifier = Modifier
-                                .align(if (isRx) Alignment.CenterStart else Alignment.CenterEnd),
+                            modifier = Modifier.align(if (isRx) Alignment.CenterStart else Alignment.CenterEnd),
                             shape = RoundedCornerShape(6.dp),
                             colors = CardDefaults.cardColors(
                                 containerColor = if (isRx) {
@@ -402,20 +387,13 @@ fun NavContent(
                                     )
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
                                     ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(6.dp)
-                                                .background(successDotColor, CircleShape),
-                                            contentAlignment = Alignment.Center,
-                                        ) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(3.dp)
-                                                    .background(sourceDotColor, CircleShape),
-                                            )
-                                        }
+                                        Text(
+                                            text = sourceLabel,
+                                            fontSize = 10.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
                                     }
                                 }
 
