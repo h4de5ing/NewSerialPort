@@ -28,14 +28,14 @@ fun getGitSha(): String =
 
 android {
     namespace = "com.android.serialport2"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.android.serialport2"
         minSdk = 24
-        targetSdk = 36
-        versionCode = 511
-        versionName = "5.1.1"
+        targetSdk = 37
+        versionCode = 520
+        versionName = "5.2.0"
 
         vectorDrawables {
             useSupportLibrary = true
